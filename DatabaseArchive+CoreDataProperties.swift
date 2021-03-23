@@ -16,13 +16,13 @@ extension DatabaseArchive {
         return NSFetchRequest<DatabaseArchive>(entityName: "DatabaseArchive")
     }
 
-    @NSManaged public var encodedProto: String?
-    @NSManaged public var client: String?
+    @NSManaged public var encodedProto: String
+    @NSManaged public var client: String
     @NSManaged public var date: Date?
     @NSManaged public var local: Bool
     @NSManaged public var protoID: Int16
     @NSManaged public var recordID: String?
-    @NSManaged public var construction: String?
+    @NSManaged public var construction: String
 
 }
 
