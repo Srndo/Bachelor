@@ -36,9 +36,10 @@ struct Cloud {
     // after save insert ckrecord to this "row" in coredata
     // every application launch check if ckrecord.modificationDate is older than one week
     //      if yes remove encoded proto from disk, set flag to remote [false]
-    static func save(encodedProto: String, completition: @escaping (Result<CloudResult, Error>) -> ()){
+    static func save(protoID: Int, encodedProto: String, completition: @escaping (Result<CloudResult, Error>) -> ()){
         let recordID = CKRecord.ID (zoneID: CloudElements.zone.zoneID)
         let itemRecord = CKRecord(recordType: RecordType.items, recordID: recordID)
+        itemRecord["protoID"] = protoID as CKRecordValue
         itemRecord["encodedProto"] = encodedProto as CKRecordValue
         
         CloudElements.container.privateCloudDatabase.save(itemRecord, completionHandler: { (record , err) in
@@ -61,9 +62,12 @@ struct Cloud {
                     return
                 }
                 
-                let result = CloudResult(record: recordID, encodedProto: encodedProto)
+                guard let _ = record["protoID"] as? Int else {
+                    completition(.failure(CloudKitHelperErrors.castFailure))
+                    return
+                }
                 
-                print("Protocol saved on cloud")
+                let result = CloudResult(record: recordID, encodedProto: encodedProto)
                 
                 completition(.success(result))
             }
@@ -90,7 +94,7 @@ struct Cloud {
         })
     }
     
-    static func fetch(protos: Protos, documentDir: URL, completition: @escaping (Result<CloudResult, Error>) -> ()) {
+    static func fetch(completition: @escaping (Result<CloudResult, Error>) -> ()) {
         let predicate = NSPredicate(value: true)
         let sort = NSSortDescriptor(key: "creationDate", ascending: true)
         
@@ -98,33 +102,33 @@ struct Cloud {
         querry.sortDescriptors = [sort]
         
         let operation = CKQueryOperation(query: querry)
-        operation.desiredKeys = ["encodedProto"]
+        operation.desiredKeys = ["protoID", "encodedProto"]
         operation.resultsLimit = 50
-        
-        var fetched: [Proto] = []
         
         operation.recordFetchedBlock = { record in
             DispatchQueue.main.async {
                 
-                // todo recordID need to be inserted 
                 let recordID = record.recordID
+                
+//                guard let protoID = record["protoID"] as? Int  else {
+//                    completition(.failure(CloudKitHelperErrors.castFailure))
+//                    return
+//                }
                 
                 guard let encodedProto = record["encodedProto"] as? String else {
                     completition(.failure(CloudKitHelperErrors.castFailure))
                     return
                 }
                  
-                guard let data = Data(base64Encoded: encodedProto) else {
-                    completition(.failure(CloudKitHelperErrors.castFailure))
-                    return
-                }
-                
-                guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
-                    completition(.failure(CloudKitHelperErrors.castFailure))
-                    return
-                }
-                
-                fetched.append(proto)
+//                guard let data = Data(base64Encoded: encodedProto) else {
+//                    completition(.failure(CloudKitHelperErrors.castFailure))
+//                    return
+//                }
+//
+//                guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
+//                    completition(.failure(CloudKitHelperErrors.castFailure))
+//                    return
+//                }
                 
                 let result = CloudResult(record: recordID, encodedProto: encodedProto)
                 print("Protocols fetched")
@@ -138,11 +142,7 @@ struct Cloud {
                     completition(.failure(err))
                     return
                 }
-                if fetched.count < protos.items.count {
-                    protos.items = fetched
-                }
             }
-            
         }
         
         CloudElements.container.privateCloudDatabase.add(operation)
