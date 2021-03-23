@@ -23,7 +23,7 @@ struct DropDown<Content: View>: View {
             Text(header)
                 .bold()
             Spacer()
-            show ? Image(systemName: "chevron.right").foregroundColor(.gray) : Image(systemName: "chevron.down").foregroundColor(.gray)
+            show ? Image(systemName: "chevron.down").foregroundColor(.gray) : Image(systemName: "chevron.right").foregroundColor(.gray)
         }
         .onTapGesture {
             show.toggle()
@@ -36,23 +36,34 @@ struct DropDown<Content: View>: View {
 }
 
 struct ProtocolView: View {
+    mutating func setProto() {
+        guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
+        guard let proto = document.proto else { print("ERROR [protoView-document]: Document protocol is nil"); return}
+        self.proto = proto
+    }
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) private var DAs: FetchedResults<DatabaseArchive>
-    private let title: String
+    
     private var internalID: Int
+    @State private var message: String = ""
     @State var proto: Proto
     
+    @State private var ico: String = ""
+    @State private var dic: String = ""
+    @State private var reqVal: String = ""
     
-    init(proto: Proto? = nil){
-        if let proto = proto {
-            title = String(proto.id)
-            internalID = proto.internalID
-            _proto = State(initialValue: proto)
+    private let protoID: Int
+    @State private var document: Document?
+    
+    init(protoID: Int? = nil){
+        if let protoID = protoID  {
+            self.protoID = protoID
         } else {
-            title = "Nový protokol" // todo: set to ""
-            internalID = -1
-            _proto = State(initialValue: Proto(id: -1))
+            self.protoID = -1
         }
+        internalID = -1
+        _proto = State(initialValue: Proto(id: self.protoID))
+        document = nil
     }
     
     var body: some View {
@@ -61,8 +72,16 @@ struct ProtocolView: View {
                 Group{
                     TextField("*Názov", text: $proto.client.name)
                     TextField("*Adresa", text: $proto.client.address)
-                    TextField("*ICO", text: $proto.client.ico.bound)
-                    TextField("*DIC", text: $proto.client.dic.bound)
+                    TextField("*ICO", text: $ico).onChange(of: ico) { value in
+                        if let ico = Int(value) {
+                            proto.client.ico = ico
+                        }
+                    }
+                    TextField("*DIC", text: $dic).onChange(of: dic) { value in
+                        if let dic = Int(value) {
+                            proto.client.dic = dic
+                        }
+                    }
                 }
             }.foregroundColor(proto.client.filled() ? .green : .red)
             
@@ -85,7 +104,11 @@ struct ProtocolView: View {
             DropDown(header: "Metóda"){
                 Group{
                     TextField("*Názov", text: $proto.method.name)
-                    TextField("*Požadovaná minimálna hodnota", text: $proto.method.requestedValue.bound)
+                    TextField("*Požadovaná minimálna hodnota", text: $reqVal).onChange(of: reqVal) { value in
+                        if let reqVal = Double(value) {
+                            proto.method.requestedValue = reqVal
+                        }
+                    }
                     Picker("*Jednotky", selection: $proto.method.monitoredDimension) {
                         ForEach(Dimensions.allCases, id:\.self) { dim in
                             Text(dim.rawValue)
@@ -110,53 +133,140 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
-            HStack{
-                Spacer()
-                Button(proto.id == -1 ? "Vytvor" : "Uprav"){
-                    if let last = DAs.last {
-                        proto.id = Int(last.protoID)
-                    } else {
-                        proto.id = 1
+            Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)){
+                HStack{
+                    Spacer()
+                    Button(proto.id == -1 ? "Vytvor" : "Uprav"){
+                        if proto.id == -1 {
+                            if let last = DAs.last {
+                                proto.id = Int(last.protoID) + 1
+                            } else {
+                                proto.id = 1
+                            }
+                        }
+                        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Documents").appendingPathComponent(String(proto.id) + String(".json"))
+                        
+                        let encodedProto: String
+                        
+                        // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
+                        proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
+                        do {
+                            encodedProto = try JSONEncoder().encode(proto).base64EncodedString()
+                        } catch {
+                            print(error)
+                            return
+                        }
+                        
+                        if document == nil {
+                            document = Document(protoID: proto.id, proto: proto)
+                            guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
+                            
+                            document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
+                                print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
+                                let newDA = DatabaseArchive(context: moc)
+                                newDA.client = proto.client.name
+                                newDA.construction = proto.construction.name
+                                newDA.date = proto.creationDate
+                                newDA.local = true
+                                newDA.protoID = Int16(proto.id)
+                                newDA.encodedProto = encodedProto
+                                
+                                Cloud.save(protoID: proto.id, encodedProto: encodedProto, completition: { result in
+                                    switch result {
+                                    case .failure(let err):
+                                        print("ERROR [cloud]: Protocol not saved into cloud")
+                                        print(err)
+                                        return
+                                        
+                                    case .success(let element):
+                                        newDA.recordID = element.record.recordName
+                                        do {
+                                            try moc.save()
+                                        } catch {
+                                            print("ERROR [coredata]: RecordID not saved")
+                                            print(error)
+                                        }
+                                        print("Protocol saved on cloud")
+                                    }
+                                })
+                                
+                                do {
+                                    try moc.save()
+                                    proto = Proto(id: -1)
+                                    self.message = "Protokol uložený"
+                                } catch {
+                                    self.message = "ERROR: Protokol sa nepodarilo uložiť"
+                                    print(error)
+                                }
+                            })
+                        } else {
+                            document!.proto = proto
+                            let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
+                            DA.client = proto.client.name
+                            DA.construction = proto.construction.name
+                            DA.date = proto.creationDate
+                            DA.local = true
+                            DA.protoID = Int16(proto.id)
+                            DA.encodedProto = encodedProto
+                            document!.updateChangeCount(.done)
+                            
+                            // MARK: TODO: Cloud modify
+                            do {
+                                try moc.save()
+                                self.message = "Zmeny uložené"
+                            } catch {
+                                self.message = "ERROR: Zmeny sa nepodarilo uložiť"
+                                print(error)
+                            }
+                        }
                     }
-                    
-                    let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Documents").appendingPathComponent(String(proto.id) + String(".json"))
-                    let encodedProto: String
-                    do {
-                        encodedProto = try JSONEncoder().encode(proto).base64EncodedString()
-                    } catch {
-                        print(error)
-                        return
-                    }
-                    let document = Document(fileURL: path, proto: proto)
-                    
-                    document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
-                        print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
-                        // MARK: TODO: save to cloud
-                        let newDA = DatabaseArchive(context: moc)
-                        newDA.client = proto.client.name
-                        newDA.construction = proto.construction.name
-                        newDA.date = proto.creationDate
-                        newDA.local = true
-                        newDA.protoID = Int16(proto.id)
-                        newDA.encodedProto = encodedProto
-//                        newDA.recordID
-                    })
-                    proto = Proto(id: -1)
+                    .disabled(proto.disabled())
+                    .padding(8)
+                    .background(proto.disabled() ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    Spacer()
                 }
-                .disabled(proto.disabled())
-                .padding(8)
-                .background(proto.disabled() ? Color.gray : Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                Spacer()
             }
-            
-        }.toolbar{
+        }
+        .toolbar{
             ToolbarItem(placement: .navigationBarLeading){
-                Text("\(title)").foregroundColor(.gray)
+                protoID != -1 ? AnyView(Text("\(protoID)").foregroundColor(.gray)) : AnyView(EmptyView())
             }
             ToolbarItem(placement: .navigationBarTrailing){
-                internalID != -1 ? AnyView(Text("\(internalID)")) : AnyView(EmptyView())
+                internalID != -1 ? AnyView(Text("\(internalID)").foregroundColor(.gray)) : AnyView(EmptyView())
+            }
+        }
+        .onAppear{
+            guard protoID != -1 else { return }
+            document = Document(protoID: protoID)
+            guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
+            
+            document.open { res in
+                if res {
+                    print("Document with protocol \(protoID) opened.")
+                    DispatchQueue.main.async {
+                        guard let proto = document.proto else { print("ERROR [protoView-document]: Document protocol is nil"); return}
+                        self.proto = proto
+                        self.ico = String(proto.client.ico)
+                        self.dic = String(proto.client.dic)
+                        self.reqVal = String(proto.method.requestedValue)
+                    }
+                } else {
+                    print("ERROR [protoView-document]: Document with protocol \(protoID) did not open.")
+                }
+            }
+        }
+        .onDisappear{
+            if let document = document {
+                document.close{ res in
+                    if res {
+                        print("Document with protocol \(protoID) closed")
+                    } else {
+                        print("ERROR: Document with protocol \(protoID) did not closed")
+                    }
+                    
+                }
             }
         }
     }
