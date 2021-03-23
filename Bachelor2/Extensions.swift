@@ -7,47 +7,47 @@
 
 import SwiftUI
 
-extension Int {
-    var _bound: Int {
-        get {
-            return self
-        }
-        set {
-            self = newValue
-        }
-    }
-    public var bound: String {
-        get {
-            return String(_bound)
-        }
-        set {
-            _bound = Int(newValue) ?? 0
-        }
-    }
-}
-
-extension Double {
-    var _bound: Double {
-        get {
-            return self
-        }
-        set {
-            self = newValue
-        }
-    }
-    public var bound: String {
-        get {
-            return String(_bound)
-        }
-        set {
-            _bound = Double(newValue) ?? 0.0
-        }
-    }
-}
+//extension Int {
+//    var _bound: Int {
+//        get {
+//            return self
+//        }
+//        set {
+//            self = newValue
+//        }
+//    }
+//    public var bound: String {
+//        get {
+//            return String(_bound)
+//        }
+//        set {
+//            _bound = Int(newValue) ?? 0
+//        }
+//    }
+//}
+//
+//extension Double {
+//    var _bound: Double {
+//        get {
+//            return self
+//        }
+//        set {
+//            self = newValue
+//        }
+//    }
+//    public var bound: String {
+//        get {
+//            return String(_bound)
+//        }
+//        set {
+//            _bound = Double(newValue) ?? 0.0
+//        }
+//    }
+//}
 
 extension Proto {
     func disabled() -> Bool {
-        if id != -1 && creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() {
+        if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() {
             return false
         }
         return true
@@ -80,7 +80,7 @@ extension Construction {
 
 extension Company {
     func filled() -> Bool {
-        return !(ico.bound.isEmpty || dic.bound.isEmpty || name.isEmpty || address.isEmpty)
+        return !(ico <= 0 || dic <= 0 || name.isEmpty || address.isEmpty)
     }
 }
 
