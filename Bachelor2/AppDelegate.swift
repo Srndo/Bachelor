@@ -15,6 +15,52 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        let fileManager = FileManager.default
+        
+        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        guard let docURL = documentsDirectory else { print("ERROR [appStart]: Documents directory is nil"); return false }
+        let imagesPath = docURL.appendingPathComponent("Images")
+        let documentsPath = docURL.appendingPathComponent("Documents")
+        
+        if !fileManager.fileExists(atPath: imagesPath.path) {
+            do {
+                try fileManager.createDirectory(atPath: imagesPath.path, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print(error);
+                return false
+            }
+        }
+        
+        if !fileManager.fileExists(atPath: documentsPath.path) {
+            do {
+                try fileManager.createDirectory(atPath: documentsPath.path, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print(error);
+                return false
+            }
+        }
+        
+        let zoneSet: Bool = UserDefaults.standard.bool(forKey: "ZoneSet")
+        
+        if !zoneSet {
+            let myRecordZone = CKRecordZone(zoneName: "Bachelor")
+            let container = CKContainer(identifier: "iCloud.cz.vutbr.fit.xsesta06")
+            container.privateCloudDatabase.save(myRecordZone, completionHandler:
+            ({returnRecord, error in
+                if let err = error {
+                    print(err.localizedDescription)
+                    UserDefaults.standard.set(false, forKey: "ZoneSet")
+                } else {
+                    print("Zone created")
+                    UserDefaults.standard.set(true, forKey: "ZoneSet")
+                }
+            }))
+        }
+        else{
+            print("Zone already created")
+        }
+        
         return true
     }
 
