@@ -14,10 +14,14 @@ enum DocumentErr: Error {
 
 class Document: UIDocument {
     var proto: Proto?
-    
-    init(fileURL: URL, proto: Proto? = nil) {
+    private var documentPath: URL
+    init(protoID: Int, proto: Proto? = nil) {
         self.proto = proto
-        super.init(fileURL: fileURL)
+        
+        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        documentPath = path.appendingPathComponent("Documents").appendingPathComponent(String(protoID) + ".json")
+        
+        super.init(fileURL: documentPath)
     }
     
     /**
@@ -25,7 +29,7 @@ class Document: UIDocument {
      */
     override func contents(forType typeName: String) throws -> Any {
         do {
-            return try JSONEncoder().encode(proto).base64EncodedString()
+            return try JSONEncoder().encode(proto)
         } catch {
             throw DocumentErr.encErr
         }
@@ -43,5 +47,9 @@ class Document: UIDocument {
             self.proto = nil
             print("ERROR [document load]: Cannot decode protocol.")
         }
+    }
+    
+    func delete() throws {
+        try FileManager.default.removeItem(at: documentPath)
     }
 }
