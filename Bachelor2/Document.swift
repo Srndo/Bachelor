@@ -14,7 +14,7 @@ enum DocumentErr: Error {
 
 class Document: UIDocument {
     var proto: Proto?
-    private var documentPath: URL
+    var documentPath: URL
     
     init(protoID: Int, proto: Proto? = nil) {
         self.proto = proto

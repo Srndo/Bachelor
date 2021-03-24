@@ -69,6 +69,7 @@ struct Cloud {
                 
                 let result = CloudResult(record: recordID, encodedProto: encodedProto)
                 
+                print("Protocol saved on cloud")
                 completition(.success(result))
             }
         })
@@ -87,7 +88,6 @@ struct Cloud {
                     return
                 }
                 
-                // remove from coreData
                 print("Protocol delete from cloud")
                 completition(.success(recordID))
             }
@@ -110,28 +110,14 @@ struct Cloud {
                 
                 let recordID = record.recordID
                 
-//                guard let protoID = record["protoID"] as? Int  else {
-//                    completition(.failure(CloudKitHelperErrors.castFailure))
-//                    return
-//                }
-                
                 guard let encodedProto = record["encodedProto"] as? String else {
                     completition(.failure(CloudKitHelperErrors.castFailure))
                     return
                 }
-                 
-//                guard let data = Data(base64Encoded: encodedProto) else {
-//                    completition(.failure(CloudKitHelperErrors.castFailure))
-//                    return
-//                }
-//
-//                guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
-//                    completition(.failure(CloudKitHelperErrors.castFailure))
-//                    return
-//                }
                 
                 let result = CloudResult(record: recordID, encodedProto: encodedProto)
-                print("Protocols fetched")
+                
+                print("Protocol fetched")
                 completition(.success(result))
             }
         }
@@ -160,6 +146,7 @@ struct Cloud {
                 guard let record = record else { return }
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = .prettyPrinted
+                
                 guard let encodedProto = try? encoder.encode(item).base64EncodedString() else { printError(from: "cloud modify", message: "Cannot encoded proto \(item.id)"); return }
                 record["encodedProto"] = encodedProto as CKRecordValue
                 
@@ -173,11 +160,10 @@ struct Cloud {
                         guard let record = record else { return }
                         let recordID = record.recordID
                         guard let encodedProto = record["encodedProto"] as? String else { return }
-//                        guard let data = Data(base64Encoded: encodedProto) else { return }
-//                        guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else { return }
                         
                         
                         let result = CloudResult(record: recordID, encodedProto: encodedProto)
+                        
                         print("Protocol modified")
                         completition(.success(result))
                     }

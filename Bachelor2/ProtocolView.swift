@@ -37,18 +37,20 @@ struct DropDown<Content: View>: View {
 
 struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
-    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) private var DAs: FetchedResults<DatabaseArchive>
+    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
     
-    private var internalID: Int
-    @State private var message: String = ""
+    @State var modifying: Bool = false
+    @State var internalID: Int = -1
+    let protoID: Int
+    
+    @State var message: String = ""
     @State var proto: Proto
     
-    @State private var ico: String = ""
-    @State private var dic: String = ""
-    @State private var reqVal: String = ""
+    @State var ico: String = ""
+    @State var dic: String = ""
+    @State var reqVal: String = ""
     
-    private let protoID: Int
-    @State private var document: Document?
+    @State var document: Document?
     
     init(protoID: Int? = nil){
         if let protoID = protoID  {
@@ -56,7 +58,6 @@ struct ProtocolView: View {
         } else {
             self.protoID = -1
         }
-        internalID = -1
         _proto = State(initialValue: Proto(id: self.protoID))
         document = nil
     }
@@ -132,70 +133,16 @@ struct ProtocolView: View {
                 HStack{
                     Spacer()
                     Button(proto.id == -1 ? "Vytvor" : "Uprav"){
-                        if proto.id == -1 {
-                            if let last = DAs.last {
-                                proto.id = Int(last.protoID) + 1
-                            } else {
-                                proto.id = 1
-                            }
-                        }
-                        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Documents").appendingPathComponent(String(proto.id) + String(".json"))
+                        // if protoID was set as -1 (new protocol) find last protoID in "DA" and increment (if empty 0 + 1 -> first proto) else set to old value
+                        proto.id = proto.id == -1 ? Int(DAs.last?.protoID ?? 0) + 1 : proto.id
                         
                         // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                         proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                         
                         if document == nil {
-                            document = Document(protoID: proto.id, proto: proto)
-                            guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
-                            
-                            document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
-                                print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
-                                let newDA = DatabaseArchive(context: moc)
-                                let encodedProto = newDA.fillWithData(proto: proto, local: true)
-                                guard let encoded = encodedProto else { printError(from: "UIDoc", message: "Cannot save to cloud, encodedProto is nil"); return }
-                                
-                                Cloud.save(protoID: proto.id, encodedProto: encoded, completition: { result in
-                                    switch result {
-                                    case .failure(let err):
-                                        printError(from: "cloud", message: "Protocol not saved into cloud")
-                                        print(err)
-                                        return
-                                        
-                                    case .success(let element):
-                                        newDA.recordID = element.record.recordName
-                                        do {
-                                            try moc.save()
-                                            print("Protocol saved on cloud")
-                                        } catch {
-                                            printError(from: "coredata", message: "RecordID not saved")
-                                            print(error)
-                                        }
-                                    }
-                                })
-                                
-                                do {
-                                    try moc.save()
-                                    proto = Proto(id: -1)
-                                    self.message = "Protokol uložený"
-                                } catch {
-                                    self.message = "ERROR: Protokol sa nepodarilo uložiť"
-                                    print(error)
-                                }
-                            })
+                            createNew()
                         } else {
-                            document!.proto = proto
-                            let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
-                            let _ = DA.fillWithData(proto: proto, local: true)
-                            document!.updateChangeCount(.done)
-                            
-                            // MARK: TODO: Cloud modify
-                            do {
-                                try moc.save()
-                                self.message = "Zmeny uložené"
-                            } catch {
-                                self.message = "ERROR: Zmeny sa nepodarilo uložiť"
-                                print(error)
-                            }
+                            modify()
                         }
                     }
                     .disabled(proto.disabled())
@@ -216,36 +163,17 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-            guard protoID != -1 else { return }
-            document = Document(protoID: protoID)
-            guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
-            
-            document.open { res in
-                if res {
-                    print("Document with protocol \(protoID) opened.")
-                    DispatchQueue.main.async {
-                        guard let proto = document.proto else { printError(from: "protoView-document", message: "Document protocol is nil"); return }
-                        self.proto = proto
-                        self.ico = String(proto.client.ico)
-                        self.dic = String(proto.client.dic)
-                        self.reqVal = String(proto.method.requestedValue)
-                    }
-                } else {
-                    printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
+            print("DAs.count:", DAs.count)
+            DAs.forEach{ da in
+                if da.recordID == nil {
+                    moc.delete(da)
+                    try? moc.save()
                 }
             }
+            openDocument()
         }
         .onDisappear{
-            if let document = document {
-                document.close{ res in
-                    if res {
-                        print("Document with protocol \(protoID) closed")
-                    } else {
-                        printError(from: "protoView-document", message: "Document with protocol \(protoID) did not closed")
-                    }
-                    
-                }
-            }
+            closeDocument()
         }
     }
 }

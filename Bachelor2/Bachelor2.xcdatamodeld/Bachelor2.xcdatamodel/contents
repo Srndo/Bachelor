@@ -7,7 +7,7 @@
         <attribute name="encodedProto" optional="YES" attributeType="String"/>
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="recordID" optional="YES" attributeType="String"/>
+        <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName=""/>
     </entity>
     <entity name="Photos" representedClassName="Photos" syncable="YES" codeGenerationType="class">
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
