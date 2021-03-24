@@ -160,7 +160,7 @@ struct Cloud {
                 guard let record = record else { return }
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = .prettyPrinted
-                guard let encodedProto = try? encoder.encode(item).base64EncodedString() else { print("ERROR [cloud modify]: Cannot encoded proto \(item.id)"); return }
+                guard let encodedProto = try? encoder.encode(item).base64EncodedString() else { printError(from: "cloud modify", message: "Cannot encoded proto \(item.id)"); return }
                 record["encodedProto"] = encodedProto as CKRecordValue
                 
                 CloudElements.container.privateCloudDatabase.save(record) { record, err in

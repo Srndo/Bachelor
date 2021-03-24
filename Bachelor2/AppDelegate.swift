@@ -19,7 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let fileManager = FileManager.default
         
         let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
-        guard let docURL = documentsDirectory else { print("ERROR [appStart]: Documents directory is nil"); return false }
+        guard let docURL = documentsDirectory else { printError(from: "appStart", message: "Documents directory is nil"); return false }
         let imagesPath = docURL.appendingPathComponent("Images")
         let documentsPath = docURL.appendingPathComponent("Documents")
         
@@ -56,9 +56,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     UserDefaults.standard.set(true, forKey: "ZoneSet")
                 }
             }))
-        }
-        else{
-            print("Zone already created")
         }
         
         return true

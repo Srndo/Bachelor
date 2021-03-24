@@ -45,6 +45,10 @@ import SwiftUI
 //    }
 //}
 
+public func printError(from: String, message: String){
+    print("ERROR [\(from)]: \(message)")
+}
+
 extension Proto {
     func disabled() -> Bool {
         if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() {
@@ -86,20 +90,20 @@ extension Company {
 
 extension Photo {
     mutating func saveToDisk(photo: UIImage?, name: String) {
-        guard let img = photo else { print("ERROR [save photo]: \(name) for save is nil."); return }
-        guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { print("ERROR [save photo]: Documents directory is nil"); return }
+        guard let img = photo else { printError(from: "save photo", message: "\(name) for save is nil"); return }
+        guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "save photo", message: "Documents directory is nil"); return }
         
         self.name = name
         self.relativePath = "Images/" + name + ".png"
         let imagePath = docURL.appendingPathComponent(self.relativePath)
         
         DispatchQueue.global().async {
-            guard let data = img.jpegData(compressionQuality: 0.1) else { print("ERROR [save photo]: Cannot convert \(name) to data"); return }
+            guard let data = img.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert \(name) to data"); return }
             
             do {
                 try data.write(to: imagePath)
             } catch {
-                print("ERROR [save photo]: Cannot write \(name) to disk")
+                printError(from: "save photo", message: "Cannot write \(name) to disk")
                 print(error)
                 return
             }
@@ -109,8 +113,9 @@ extension Photo {
     
     func asynLoadFromDisk(completitionBlock: @escaping (Image) -> ()) {
         DispatchQueue.global().async {
-            guard self.relativePath != "" else { print("ERROR: [photo load]: Path of \(self.name) is empty"); return }
-            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { print("ERROR [photo save]: Documents directory is nil"); return }
+            guard self.relativePath != "" else { printError(from: "photo load", message: "Path of \(self.name) is empty"); return }
+            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "photo load", message: "Documents directory is nil"); return }
+            
             let imagePath = docURL.appendingPathComponent(self.relativePath)
             if let uiimage = UIImage(contentsOfFile: imagePath.path){
                 DispatchQueue.main.async {
@@ -125,13 +130,15 @@ extension Photo {
     
     func deleteFromDisk() {
         DispatchQueue.global().async {
-            guard self.relativePath != "" else { print("ERROR [delete photo]: Path of \(self.name) is empty"); return }
-            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { print("ERROR [delete photo]: Documents directory is nil"); return }
+            printError(from: "delete photo", message: "Cannot delete \(self.name) from disk")
+            guard self.relativePath != "" else { printError(from: "delete photo", message: "Path of \(self.name) is empty"); return }
+            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "delete photo", message: "Documents directory is nil"); return }
+            
             let url = docURL.appendingPathComponent(self.relativePath)
             do {
                 try FileManager.default.removeItem(at: url)
             } catch {
-                print("ERROR [delete photo]: Cannot delete \(self.name) from disk")
+                printError(from: "delete photo", message: "Cannot delete \(self.name) from disk")
                 print(error)
                 return
             }

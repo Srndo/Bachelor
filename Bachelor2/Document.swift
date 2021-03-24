@@ -15,6 +15,7 @@ enum DocumentErr: Error {
 class Document: UIDocument {
     var proto: Proto?
     private var documentPath: URL
+    
     init(protoID: Int, proto: Proto? = nil) {
         self.proto = proto
         
@@ -45,7 +46,7 @@ class Document: UIDocument {
         }
         else {
             self.proto = nil
-            print("ERROR [document load]: Cannot decode protocol.")
+            printError(from: "document load", message: "Cannot decode protocol")
         }
     }
     

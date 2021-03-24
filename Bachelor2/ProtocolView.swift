@@ -36,11 +36,6 @@ struct DropDown<Content: View>: View {
 }
 
 struct ProtocolView: View {
-    mutating func setProto() {
-        guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
-        guard let proto = document.proto else { print("ERROR [protoView-document]: Document protocol is nil"); return}
-        self.proto = proto
-    }
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) private var DAs: FetchedResults<DatabaseArchive>
     
@@ -146,35 +141,23 @@ struct ProtocolView: View {
                         }
                         let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Documents").appendingPathComponent(String(proto.id) + String(".json"))
                         
-                        let encodedProto: String
-                        
                         // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                         proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
-                        do {
-                            encodedProto = try JSONEncoder().encode(proto).base64EncodedString()
-                        } catch {
-                            print(error)
-                            return
-                        }
                         
                         if document == nil {
                             document = Document(protoID: proto.id, proto: proto)
-                            guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
+                            guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
                             
                             document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
                                 print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
                                 let newDA = DatabaseArchive(context: moc)
-                                newDA.client = proto.client.name
-                                newDA.construction = proto.construction.name
-                                newDA.date = proto.creationDate
-                                newDA.local = true
-                                newDA.protoID = Int16(proto.id)
-                                newDA.encodedProto = encodedProto
+                                let encodedProto = newDA.fillWithData(proto: proto, local: true)
+                                guard let encoded = encodedProto else { printError(from: "UIDoc", message: "Cannot save to cloud, encodedProto is nil"); return }
                                 
-                                Cloud.save(protoID: proto.id, encodedProto: encodedProto, completition: { result in
+                                Cloud.save(protoID: proto.id, encodedProto: encoded, completition: { result in
                                     switch result {
                                     case .failure(let err):
-                                        print("ERROR [cloud]: Protocol not saved into cloud")
+                                        printError(from: "cloud", message: "Protocol not saved into cloud")
                                         print(err)
                                         return
                                         
@@ -182,11 +165,11 @@ struct ProtocolView: View {
                                         newDA.recordID = element.record.recordName
                                         do {
                                             try moc.save()
+                                            print("Protocol saved on cloud")
                                         } catch {
-                                            print("ERROR [coredata]: RecordID not saved")
+                                            printError(from: "coredata", message: "RecordID not saved")
                                             print(error)
                                         }
-                                        print("Protocol saved on cloud")
                                     }
                                 })
                                 
@@ -202,12 +185,7 @@ struct ProtocolView: View {
                         } else {
                             document!.proto = proto
                             let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
-                            DA.client = proto.client.name
-                            DA.construction = proto.construction.name
-                            DA.date = proto.creationDate
-                            DA.local = true
-                            DA.protoID = Int16(proto.id)
-                            DA.encodedProto = encodedProto
+                            let _ = DA.fillWithData(proto: proto, local: true)
                             document!.updateChangeCount(.done)
                             
                             // MARK: TODO: Cloud modify
@@ -240,20 +218,20 @@ struct ProtocolView: View {
         .onAppear{
             guard protoID != -1 else { return }
             document = Document(protoID: protoID)
-            guard let document = document else { print("ERROR [protoView-document]: Document is nil"); return }
+            guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
             
             document.open { res in
                 if res {
                     print("Document with protocol \(protoID) opened.")
                     DispatchQueue.main.async {
-                        guard let proto = document.proto else { print("ERROR [protoView-document]: Document protocol is nil"); return}
+                        guard let proto = document.proto else { printError(from: "protoView-document", message: "Document protocol is nil"); return }
                         self.proto = proto
                         self.ico = String(proto.client.ico)
                         self.dic = String(proto.client.dic)
                         self.reqVal = String(proto.method.requestedValue)
                     }
                 } else {
-                    print("ERROR [protoView-document]: Document with protocol \(protoID) did not open.")
+                    printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
                 }
             }
         }
@@ -263,7 +241,7 @@ struct ProtocolView: View {
                     if res {
                         print("Document with protocol \(protoID) closed")
                     } else {
-                        print("ERROR: Document with protocol \(protoID) did not closed")
+                        printError(from: "protoView-document", message: "Document with protocol \(protoID) did not closed")
                     }
                     
                 }
