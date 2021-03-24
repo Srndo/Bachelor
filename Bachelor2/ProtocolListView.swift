@@ -26,31 +26,66 @@ struct ProtocolListView: View {
                 }
             }
         }.onAppear{
+            // MARK: Cloud fetch
             Cloud.fetch{ result in
                 switch result {
                 case .failure(let error):
-                    print("ERROR [cloud fetch]: Cannot fetched protocols")
+                    printError(from: "cloud fetch", message: "Cannot fetched protocols")
                     print(error)
                     return
                         
                 case .success(let element):
-                    guard let encodedProto = element.encodedProto else { print("ERROR [cloud fetch]: Encoded proto missing"); return }
-                    guard let data = Data(base64Encoded: encodedProto) else { print("ERROR [cloud fetch]: Cannot convert to data"); return }
-                    guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else { print("ERROR [cloud fetch]: Cannot create proto"); return }
+                    guard let encodedProto = element.encodedProto else { printError(from: "cloud fetch", message: "Encoded proto missing"); return }
+                    
                     let document: Document
+                    let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Documents")
+                    
+                    // if exist local copy of proto -> update proto
                     if let DA = DAs.first(where: { $0.recordID == element.record.recordName }){
-                        DA.encodedProto = encodedProto
-                        try? moc.save()
-                        // add fetched proto to UIdocument
-                    } else {
-                        let newDA = DatabaseArchive(context: moc)
-                        // make func for filling
-                        // create new uidoc
+                        guard let proto = DA.fillWithData(encodedProto: encodedProto, local: false) else { return }
+                        let filePath = path.appendingPathComponent(String(proto.id) + String(".json"))
+                        
+                        // check if document with this proto exist
+                        if FileManager.default.fileExists(atPath: filePath.path){
+                            document = Document(protoID: proto.id)
+                            document.proto = proto
+                            document.updateChangeCount(.done) // MARK: TODO check if it is saving auto
+                            
+                            save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
+                            return
+                        }
                     }
+                    
+                    // if fetched proto doesnt exist locally
+                    let newDA = DatabaseArchive(context: moc)
+                    guard let proto = newDA.fillWithData(encodedProto: encodedProto, local: false) else { return }
+                    
+                    document = Document(protoID: proto.id, proto: proto)
+                    
+                    document.save(to: path, for: .forCreating){ res in
+                        if res {
+                            newDA.local = true
+                            print("Fetched document created")
+                            save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
+                        } else {
+                            printError(from: "cloud fetch", message: "Cannot create fetched document")
+                        }
+                    }
+                    save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
                     
                 }
             
             }
+        }
+    }
+    
+    private func save(from: String, message: String) {
+        do {
+            try moc.save()
+        } catch {
+            printError(from: from, message: message)
+            print(error)
+            return
         }
     }
 }
