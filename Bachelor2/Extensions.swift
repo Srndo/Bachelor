@@ -147,3 +147,127 @@ extension Photo {
     }
 }
 
+extension ProtocolView {
+    private func save(from: String, message: String, errorViewMessage: String) {
+        do {
+            try moc.save()
+        } catch {
+            printError(from: from, message: message)
+            self.message = errorViewMessage
+            print(error)
+        }
+    }
+    
+    func createNew() {
+        self.document = Document(protoID: proto.id, proto: proto)
+        guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
+        let path = document.documentPath
+        
+        document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
+            print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
+            let newDA = DatabaseArchive(context: moc)
+            let encodedProto = newDA.fillWithData(proto: proto, local: true)
+            guard let encoded = encodedProto else { printError(from: "UIDoc", message: "Cannot save to cloud, encodedProto is nil"); return }
+            
+            Cloud.save(protoID: proto.id, encodedProto: encoded, completition: { result in
+                switch result {
+                case .failure(let err):
+                    printError(from: "cloud save", message: "Protocol not saved into cloud")
+                    print(err)
+                    return
+                    
+                case .success(let element):
+                    newDA.recordID = element.record
+                    save(from: "cloud save", message: "RecordID not saved", errorViewMessage: "ERROR: Protokol sa nepodarilo zalohovať na cloud")
+                }
+            })
+            
+            save(from: "UIDoc", message: "Protocol not saved into core data", errorViewMessage: "ERROR: Protokol sa nepodarilo uložiť")
+            self.proto = Proto(id: -1)
+            self.ico = ""
+            self.dic = ""
+            self.reqVal = "" 
+            self.message = "Protokol uložený"
+        })
+    }
+    
+    // MARK: TODO: Internal ID not upadeted 
+    func modify() {
+        guard let document = document else { printError(from: "cloud modify", message: "Document is nil"); return }
+        let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
+        guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
+        self.modifying = true
+
+        // MARK: Cloud modify
+        Cloud.modify(item: proto, recordID: recordID){ res in
+            switch res {
+                case .failure(let err):
+                    printError(from: "cloud modify", message: err.localizedDescription)
+                    return
+                case .success(let element):
+                    // MARK: TODO: what if document close before modify callback ?
+                    proto.internalID = proto.internalID + 1
+                    self.internalID = proto.internalID
+                    let _ = DA.fillWithData(proto: proto, local: true, recordID: element.record)
+                    document.proto = proto
+                    document.updateChangeCount(.done)
+                    
+//                    document.save(to: document.documentPath, for: .forOverwriting){ res in
+//                        if res == true {
+//                            print("Document with protocol \(proto.id) overwrited")
+//                        } else {
+//                            printError(from: "cloud fetch", message: "Document with protocol \(proto.id) did not overwrited")
+//                        }
+//                    }
+                    
+                    self.modifying = false
+                    
+                    print("Element modified on cloud")
+                    return
+            }
+            
+        }
+        save(from: "modify", message: "Cannot save modified proto", errorViewMessage: "ERROR: Zmeny sa nepodarilo uložiť")
+        self.message = "Zmeny uložené"
+    }
+    
+    func openDocument() {
+        guard protoID != -1 else { return }
+        document = Document(protoID: protoID)
+        guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
+        
+        document.open { res in
+            if res {
+                print("Document with protocol \(protoID) opened.")
+                DispatchQueue.main.async {
+                    guard let proto = document.proto else { printError(from: "protoView-document", message: "Document protocol is nil"); return }
+                    self.proto = proto
+                    self.ico = String(proto.client.ico)
+                    self.dic = String(proto.client.dic)
+                    self.reqVal = String(proto.method.requestedValue)
+                    self.internalID = proto.internalID
+                }
+            } else {
+                printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
+            }
+        }
+    }
+    
+    func closeDocument() {
+        if let document = document {
+//            DispatchQueue.global().async {
+//                while modifying == true {
+                    // MARK: TOODO: waiting
+//                }
+                document.close{ res in
+                    if res {
+                        print("Document with protocol \(protoID) closed")
+                    } else {
+                        printError(from: "protoView-document", message: "Document with protocol \(protoID) did not closed")
+                    }
+                    
+                }
+//            }
+        }
+    }
+}
