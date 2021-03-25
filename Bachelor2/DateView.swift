@@ -7,23 +7,14 @@
 
 import SwiftUI
 
-// MARK: TODO: Date not saving
-
 struct DateView: View {
     @State private var show: Bool = false
-    @State private var color: Color
-    @State var date: Date
+    @State var color: Color = .red
+    @State var date: Date = Date()
     private var proto: Binding<Proto>
     
     init(proto: Binding<Proto>){
         self.proto = proto
-        guard let creationDate = proto.wrappedValue.creationDate else {
-            _color = State(initialValue: .red)
-            _date = State(initialValue: Date())
-            return
-        }
-        _color = State(initialValue: .green)
-        _date = State(initialValue: creationDate)
     }
     
     var body: some View {
@@ -52,6 +43,14 @@ struct DateView: View {
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+        }
+        .onChange(of: proto.wrappedValue.creationDate){ value in
+            guard let date = value else {
+                self.color = .red
+                return
+            }
+            self.date = date
+            self.color = .green
         }
     }
 }

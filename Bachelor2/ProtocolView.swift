@@ -164,12 +164,9 @@ struct ProtocolView: View {
         }
         .onAppear{
             print("DAs.count:", DAs.count)
-            DAs.forEach{ da in
-                if da.recordID == nil {
-                    moc.delete(da)
-                    try? moc.save()
-                }
-            }
+//            DAs.forEach{ da in
+//                
+//            }
             openDocument()
         }
         .onDisappear{
