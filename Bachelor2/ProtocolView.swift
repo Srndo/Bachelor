@@ -52,12 +52,20 @@ struct ProtocolView: View {
     
     @State var document: Document?
     
-    init(protoID: Int? = nil){
+    private var lastPhotoNumber: Int
+    
+    init(protoID: Int? = nil, lastPhotoNumber: Int16? = nil){
         if let protoID = protoID  {
             self.protoID = protoID
         } else {
             self.protoID = -1
         }
+        if let idx = lastPhotoNumber {
+            self.lastPhotoNumber = Int(idx)
+        } else {
+            self.lastPhotoNumber = 0
+        }
+        
         _proto = State(initialValue: Proto(id: self.protoID))
         document = nil
     }
@@ -129,13 +137,12 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
+            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber)
+            
             Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)){
                 HStack{
                     Spacer()
-                    Button(proto.id == -1 ? "Vytvor" : "Uprav"){
-                        // if protoID was set as -1 (new protocol) find last protoID in "DA" and increment (if empty 0 + 1 -> first proto) else set to old value
-                        proto.id = proto.id == -1 ? Int(DAs.last?.protoID ?? 0) + 1 : proto.id
-                        
+                    Button(protoID == -1 ? "Vytvor" : "Uprav"){
                         // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                         proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                         
@@ -164,9 +171,10 @@ struct ProtocolView: View {
         }
         .onAppear{
             print("DAs.count:", DAs.count)
-//            DAs.forEach{ da in
-//                
-//            }
+            if protoID == -1 {
+                proto.id = Int(DAs.last?.protoID ?? 0) + 1
+                print(proto.id)
+            }
             openDocument()
         }
         .onDisappear{

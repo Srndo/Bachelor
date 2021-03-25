@@ -11,11 +11,11 @@ import CloudKit
 struct ProtocolListView: View {
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) private var DAs: FetchedResults<DatabaseArchive>
-    
+    @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var photos: FetchedResults<MyPhoto>
     var body: some View {
         Form{
             ForEach(DAs, id:\.self){ item in
-                NavigationLink(destination: ProtocolView(protoID: Int(item.protoID))){
+                NavigationLink(destination: ProtocolView(protoID: Int(item.protoID), lastPhotoNumber: photos.last(where: { $0.protoID == item.protoID })?.name )){
                     HStack{
                         VStack{
                             Text(item.client)
