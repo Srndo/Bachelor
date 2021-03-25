@@ -36,19 +36,19 @@ struct ProtocolListView: View {
                     return
                         
                 case .success(let element):
-                    guard let encodedProto = element.encodedProto else { printError(from: "cloud fetch", message: "Encoded proto missing"); return }
+                    guard let cloudEncodedProto = element.encodedProto else { printError(from: "cloud fetch", message: "Encoded proto missing"); return }
                     
                     // if exist local copy of proto -> update proto
                     if let DA = DAs.first(where: { $0.recordID == element.record }){
-                        guard DA.encodedProto != encodedProto else { return }
-                        guard let proto = DA.fillWithData(encodedProto: encodedProto, local: false, recordID: element.record) else { return }
+                        guard DA.encodedProto != cloudEncodedProto else { return }
+                        guard let proto = DA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.record) else { return }
                         let document = Document(protoID: proto.id)
                         let path = document.documentPath
                         
                         // check if document with this proto exist
                         if FileManager.default.fileExists(atPath: path.path){
                             document.proto = proto
-                            document.updateChangeCount(.done) // MARK: TODO check if it is saving auto
+                            document.updateChangeCount(.done)
                             document.save(to: path, for: .forOverwriting){ res in
                                 if res == true {
                                     print("Document with protocol \(proto.id) overwrited")
@@ -63,7 +63,7 @@ struct ProtocolListView: View {
                     
                     // if fetched proto doesnt exist locally
                     let newDA = DatabaseArchive(context: moc)
-                    guard let proto = newDA.fillWithData(encodedProto: encodedProto, local: false, recordID: element.record) else { return }
+                    guard let proto = newDA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.record) else { return }
                     
                     let document = Document(protoID: proto.id, proto: proto)
                     let path = document.documentPath

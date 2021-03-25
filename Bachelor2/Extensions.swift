@@ -7,44 +7,6 @@
 
 import SwiftUI
 
-//extension Int {
-//    var _bound: Int {
-//        get {
-//            return self
-//        }
-//        set {
-//            self = newValue
-//        }
-//    }
-//    public var bound: String {
-//        get {
-//            return String(_bound)
-//        }
-//        set {
-//            _bound = Int(newValue) ?? 0
-//        }
-//    }
-//}
-//
-//extension Double {
-//    var _bound: Double {
-//        get {
-//            return self
-//        }
-//        set {
-//            self = newValue
-//        }
-//    }
-//    public var bound: String {
-//        get {
-//            return String(_bound)
-//        }
-//        set {
-//            _bound = Double(newValue) ?? 0.0
-//        }
-//    }
-//}
-
 public func printError(from: String, message: String){
     print("ERROR [\(from)]: \(message)")
 }
@@ -196,7 +158,20 @@ extension ProtocolView {
         guard let document = document else { printError(from: "cloud modify", message: "Document is nil"); return }
         let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
         guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
-        self.modifying = true
+        
+        self.proto.internalID = proto.internalID + 1
+        self.internalID = proto.internalID
+        let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
+        document.proto = proto
+        document.updateChangeCount(.done)
+        document.save(to: document.documentPath, for: .forOverwriting){ res in
+            if res == true {
+                print("Document with protocol \(proto.id) overwrited")
+            } else {
+                printError(from: "cloud fetch", message: "Document with protocol \(proto.id) did not overwrited")
+            }
+        }
+        
 
         // MARK: Cloud modify
         Cloud.modify(item: proto, recordID: recordID){ res in
@@ -204,23 +179,7 @@ extension ProtocolView {
                 case .failure(let err):
                     printError(from: "cloud modify", message: err.localizedDescription)
                     return
-                case .success(let element):
-                    // MARK: TODO: what if document close before modify callback ?
-                    proto.internalID = proto.internalID + 1
-                    self.internalID = proto.internalID
-                    let _ = DA.fillWithData(proto: proto, local: true, recordID: element.record)
-                    document.proto = proto
-                    document.updateChangeCount(.done)
-                    
-//                    document.save(to: document.documentPath, for: .forOverwriting){ res in
-//                        if res == true {
-//                            print("Document with protocol \(proto.id) overwrited")
-//                        } else {
-//                            printError(from: "cloud fetch", message: "Document with protocol \(proto.id) did not overwrited")
-//                        }
-//                    }
-                    
-                    self.modifying = false
+                case .success(_):
                     
                     print("Element modified on cloud")
                     return
@@ -255,10 +214,6 @@ extension ProtocolView {
     
     func closeDocument() {
         if let document = document {
-//            DispatchQueue.global().async {
-//                while modifying == true {
-                    // MARK: TOODO: waiting
-//                }
                 document.close{ res in
                     if res {
                         print("Document with protocol \(protoID) closed")
@@ -267,7 +222,6 @@ extension ProtocolView {
                     }
                     
                 }
-//            }
         }
     }
 }
