@@ -8,9 +8,15 @@
 import CloudKit
 import SwiftUI
 
-struct CloudResult {
-    var record: CKRecord.ID
+struct CloudResultEncodedProto {
+    var recordID: CKRecord.ID
     var encodedProto: String?
+}
+
+struct CloudResultZip {
+    var recordID: CKRecord.ID
+    var zip: String
+    var protoID: Int
 }
 
 struct Cloud {
@@ -20,7 +26,8 @@ struct Cloud {
     }
     
     struct RecordType {
-        static let items = "Protocols"
+        static let protocols = "Protocols"
+        static let photos = "Photos"
     }
     
     enum CloudKitHelperErrors: Error {
@@ -31,14 +38,134 @@ struct Cloud {
         case assetFailure
     }
     
-    // MARK: TODO:
+    // MARK: TODO
+    static func saveZIP(protoID: Int, zip: String, completition: @escaping (Result<CloudResultZip, Error>) -> ()) {
+        let recordID = CKRecord.ID( zoneID: CloudElements.zone.zoneID)
+        let itemRecord = CKRecord(recordType: RecordType.protocols, recordID: recordID)
+        itemRecord["protoID"] = protoID as CKRecordValue
+        itemRecord["zip"] = zip as CKRecordValue // check if as CKRecordValue
+        
+        CloudElements.container.privateCloudDatabase.save(itemRecord){ record, err in
+            DispatchQueue.main.async {
+                if let err = err {
+                    completition(.failure(err))
+                    return
+                }
+                
+                guard let record = record else {
+                    completition(.failure(CloudKitHelperErrors.recordFailure))
+                    return
+                }
+                
+                let recordID = record.recordID
+                
+                guard let zip = record["zip"] as? String else {
+                    completition(.failure(CloudKitHelperErrors.castFailure))
+                    return
+                }
+                
+                guard let protoID = record["protoID"] as? Int else {
+                    completition(.failure(CloudKitHelperErrors.castFailure))
+                    return
+                }
+                
+                print("Zip saved  on cloud")
+                let result = CloudResultZip(recordID: recordID, zip: zip, protoID: protoID)
+                completition(.success(result))
+            }
+        }
+    }
+    
+    // MARK: TODO
+    static func fetchZIP(completition: @escaping (Result<CloudResultZip, Error>) -> ()) {
+        let predicate = NSPredicate(value: true)
+        let sort = NSSortDescriptor(key: "creationDate", ascending: true)
+        
+        let querry = CKQuery(recordType: RecordType.photos, predicate: predicate)
+        querry.sortDescriptors = [sort]
+        
+        let operation = CKQueryOperation(query: querry)
+        operation.desiredKeys = ["protoID", "zip"]
+        operation.resultsLimit = 50
+        
+        operation.recordFetchedBlock = { record in
+            DispatchQueue.main.async {
+                
+                let recordID = record.recordID
+                
+                guard let zip = record["zip"] as? String else {
+                    completition(.failure(CloudKitHelperErrors.castFailure))
+                    return
+                }
+                
+                guard let protoID = record["protoID"] as? Int else {
+                    completition(.failure(CloudKitHelperErrors.castFailure))
+                    return
+                }
+                
+                let result = CloudResultZip(recordID: recordID, zip: zip, protoID: protoID)
+                
+                print("ZIP fetched")
+                completition(.success(result))
+            }
+        }
+        
+        operation.queryCompletionBlock = { (_, err) in
+            DispatchQueue.main.async {
+                if let err = err {
+                    completition(.failure(err))
+                    return
+                }
+            }
+        }
+        
+        CloudElements.container.privateCloudDatabase.add(operation)
+        
+    }
+    
+    // MARK: TODO
+    static func modifyZIP(zip: String, recordID: CKRecord.ID, completition: @escaping (Result<CloudResultZip, Error>) -> ()){
+        CloudElements.container.privateCloudDatabase.fetch(withRecordID: recordID, completionHandler: { record, err in
+            DispatchQueue.main.async {
+                if let err = err {
+                    completition(.failure(err))
+                    return
+                }
+                
+                guard let record = record else { return }
+                record["zip"] = zip as CKRecordValue
+                
+                CloudElements.container.privateCloudDatabase.save(record) { record, err in
+                    DispatchQueue.main.async {
+                        if let err = err {
+                            completition(.failure(err))
+                            return
+                        }
+                        
+                        guard let record = record else { return }
+                        let recordID = record.recordID
+                        guard let zip = record["zip"] as? String else { return }
+                        guard let protoID = record["recordID"] as? Int else { return }
+                        
+                        
+                        let result = CloudResultZip(recordID: recordID, zip: zip, protoID: protoID)
+                        
+                        print("ZIP modified on cloud")
+                        completition(.success(result))
+                    }
+                }
+                
+            }
+        })
+    }
+    
     // before usage insert proto into coredata and set flag to local [true]
     // after save insert ckrecord to this "row" in coredata
     // every application launch check if ckrecord.modificationDate is older than one week
     //      if yes remove encoded proto from disk, set flag to remote [false]
-    static func save(protoID: Int, encodedProto: String, completition: @escaping (Result<CloudResult, Error>) -> ()){
+    static func save(protoID: Int, encodedProto: String, completition: @escaping (Result<CloudResultEncodedProto, Error>) -> ()){
         let recordID = CKRecord.ID (zoneID: CloudElements.zone.zoneID)
-        let itemRecord = CKRecord(recordType: RecordType.items, recordID: recordID)
+        let itemRecord = CKRecord(recordType: RecordType.protocols, recordID: recordID)
         itemRecord["protoID"] = protoID as CKRecordValue
         itemRecord["encodedProto"] = encodedProto as CKRecordValue
         
@@ -67,7 +194,7 @@ struct Cloud {
                     return
                 }
                 
-                let result = CloudResult(record: recordID, encodedProto: encodedProto)
+                let result = CloudResultEncodedProto(recordID: recordID, encodedProto: encodedProto)
                 
                 print("Protocol saved on cloud")
                 completition(.success(result))
@@ -88,17 +215,17 @@ struct Cloud {
                     return
                 }
                 
-                print("Protocol delete from cloud")
+                print("Record delete from cloud")
                 completition(.success(recordID))
             }
         })
     }
     
-    static func fetch(completition: @escaping (Result<CloudResult, Error>) -> ()) {
+    static func fetch(completition: @escaping (Result<CloudResultEncodedProto, Error>) -> ()) {
         let predicate = NSPredicate(value: true)
         let sort = NSSortDescriptor(key: "creationDate", ascending: true)
         
-        let querry = CKQuery(recordType: RecordType.items, predicate: predicate)
+        let querry = CKQuery(recordType: RecordType.protocols, predicate: predicate)
         querry.sortDescriptors = [sort]
         
         let operation = CKQueryOperation(query: querry)
@@ -115,7 +242,7 @@ struct Cloud {
                     return
                 }
                 
-                let result = CloudResult(record: recordID, encodedProto: encodedProto)
+                let result = CloudResultEncodedProto(recordID: recordID, encodedProto: encodedProto)
                 
                 print("Protocol fetched")
                 completition(.success(result))
@@ -135,7 +262,7 @@ struct Cloud {
         
     }
     
-    static func modify(item: Proto, recordID: CKRecord.ID, completition: @escaping (Result<CloudResult, Error>) -> ()){
+    static func modify(item: Proto, recordID: CKRecord.ID, completition: @escaping (Result<CloudResultEncodedProto, Error>) -> ()){
         CloudElements.container.privateCloudDatabase.fetch(withRecordID: recordID, completionHandler: { record, err in
             DispatchQueue.main.async {
                 if let err = err {
@@ -162,9 +289,9 @@ struct Cloud {
                         guard let encodedProto = record["encodedProto"] as? String else { return }
                         
                         
-                        let result = CloudResult(record: recordID, encodedProto: encodedProto)
+                        let result = CloudResultEncodedProto(recordID: recordID, encodedProto: encodedProto)
                         
-                        print("Protocol modified")
+                        print("Protocol modified on cloud")
                         completition(.success(result))
                     }
                 }
