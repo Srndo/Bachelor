@@ -53,6 +53,8 @@ struct Clima: Codable {
     var tempCon: Double = 0.0
 }
 
+// MARK: TODO: maybe append var lastPhotoIndex
+// this index will only increments so every new photo got "unique" name
 struct Proto: Codable {
     var id: Int
     var creationDate: Date?

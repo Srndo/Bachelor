@@ -82,6 +82,10 @@ struct PhotosView: View {
                 }
             }
             .sheet(isPresented: $showPicker){
+                // MARK: TODO: ImagePicker
+                // image picker needs to create MyPhoto
+                // find the value in photo
+                // call fce for saving photo into data
 //                ImagePicker(model: model, isShow: $showPicker, source: source)
             }
             
@@ -92,6 +96,16 @@ struct PhotosView: View {
                     Text(String(photo.value))
                 }
             }
+        }
+        .onDisappear{
+            // MARK: TODO: Cloud save
+            // on disappear save created photos on cloud
+            // if photosIndex is >0 than
+            // MARK: TODO: Cloud modify
+        }
+        .onAppear{
+            // MARK: TODO: Cloud fetch
+            // on appear fetch new photos
         }
     }
 }

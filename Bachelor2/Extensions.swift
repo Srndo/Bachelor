@@ -139,7 +139,7 @@ extension ProtocolView {
                     return
                     
                 case .success(let element):
-                    newDA.recordID = element.record
+                    newDA.recordID = element.recordID
                     save(from: "cloud save", message: "RecordID not saved", errorViewMessage: "ERROR: Protokol sa nepodarilo zalohovať na cloud")
                 }
             })

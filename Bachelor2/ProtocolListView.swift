@@ -39,9 +39,9 @@ struct ProtocolListView: View {
                     guard let cloudEncodedProto = element.encodedProto else { printError(from: "cloud fetch", message: "Encoded proto missing"); return }
                     
                     // if exist local copy of proto -> update proto
-                    if let DA = DAs.first(where: { $0.recordID == element.record }){
+                    if let DA = DAs.first(where: { $0.recordID == element.recordID }){
                         guard DA.encodedProto != cloudEncodedProto else { return }
-                        guard let proto = DA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.record) else { return }
+                        guard let proto = DA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.recordID) else { return }
                         let document = Document(protoID: proto.id)
                         let path = document.documentPath
                         
@@ -63,7 +63,7 @@ struct ProtocolListView: View {
                     
                     // if fetched proto doesnt exist locally
                     let newDA = DatabaseArchive(context: moc)
-                    guard let proto = newDA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.record) else { return }
+                    guard let proto = newDA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.recordID) else { return }
                     
                     let document = Document(protoID: proto.id, proto: proto)
                     let path = document.documentPath
