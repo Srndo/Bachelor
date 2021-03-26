@@ -25,7 +25,7 @@ struct ImageView: View {
     @ObservedObject var imageLoader = ImageLoader()
     var placeholder: Image
     
-    init(photo: MyPhoto, placeholder: Image = Image("placeholderImage")) {
+    init(photo: MyPhoto, placeholder: Image = Image(systemName: "photo")) {
         self.placeholder = placeholder
         self.imageLoader.load(photo: photo)
     }

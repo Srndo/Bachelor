@@ -20,6 +20,7 @@ extension MyPhoto {
     @NSManaged public var protoID: Int16
     @NSManaged public var name: Int16
     @NSManaged public var value: Double
+    @NSManaged public var recordID: CKRecord.ID?
     
     func getPhotoPath() -> URL? {
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(protoID)) else { return nil }
@@ -27,7 +28,6 @@ extension MyPhoto {
     }
     
     func savePhotoToDisk(photo: UIImage?, protoID: Int, number: Int, value: Double = -1.0) {
-        DispatchQueue.global().async {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
             print(dir)
             guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
@@ -44,7 +44,6 @@ extension MyPhoto {
             self.local = true
             self.value = value
             print("Photo saved to disk")
-        }
     }
     
     func deleteFromDisk() {

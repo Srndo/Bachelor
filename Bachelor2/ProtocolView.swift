@@ -38,6 +38,7 @@ struct DropDown<Content: View>: View {
 struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
+    @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var allPhotos: FetchedResults<MyPhoto>
     
     @State var modified: Bool = false
     @State var internalID: Int = -1
@@ -138,7 +139,7 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
-            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber)
+            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber, photos: $photos)
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
@@ -180,6 +181,7 @@ struct ProtocolView: View {
                             .background(proto.disabled() ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
+                            .buttonStyle(BorderlessButtonStyle())
                             Spacer()
                             Button("Vytvor výstup") {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
@@ -189,6 +191,7 @@ struct ProtocolView: View {
                             .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                     }
                     
@@ -211,6 +214,7 @@ struct ProtocolView: View {
                 proto.id = Int(DAs.last?.protoID ?? 0) + 1
                 print(proto.id)
             }
+            photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             openDocument()
         }
         .onDisappear{

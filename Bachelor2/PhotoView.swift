@@ -8,18 +8,23 @@
 import SwiftUI
 
 struct PhotoView: View {
+    @Environment(\.managedObjectContext) var moc
+    
     @State private var show: Bool = false
+    @Binding private var photos: [MyPhoto]
     private var protoID: Int
     private var lastPhotoIndex: Int
     
-    init(protoID: Int, photoIndex: Int){
+    init(protoID: Int, photoIndex: Int, photos: Binding<[MyPhoto]>){
         self.protoID = protoID
         self.lastPhotoIndex = photoIndex
+        _photos = photos
     }
     
     var body: some View {
         ZStack{
-            NavigationLink(destination: PhotosView(lastPhotoIndex: lastPhotoIndex, protoID: protoID)){
+            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID)
+                            .environment(\.managedObjectContext , moc)){
                 EmptyView()
             }
             .hidden()
@@ -37,10 +42,12 @@ struct PhotoView: View {
 }
 
 struct PhotosView: View {
+    @Environment(\.managedObjectContext) var moc
+    
     @State private var actionShow: Bool = false
     @State private var showPicker: Bool = false
     @State private var source: UIImagePickerController.SourceType = .photoLibrary
-    @State var photos: [MyPhoto] = []
+    @Binding var photos: [MyPhoto]
     @State var lastPhotoIndex: Int
     @State var protoID: Int
     
@@ -101,10 +108,55 @@ struct PhotosView: View {
         }
         .onDisappear{
             // MARK: TODO: Cloud save
+            for photo in photos {
+                guard photo.managedObjectContext == nil else { continue }
+                guard let path = photo.getPhotoPath() else { continue }
+                moc.insert(photo)
+                Cloud.savePhoto(protoID: Int(photo.protoID), value: photo.value, name: Int(photo.name), path: path) { res in
+                    switch res {
+                        case .failure(let err):
+                            printError(from: "cloud savePhoto", message: err.localizedDescription)
+                            return
+                        
+                        case .success(_):
+                            print("Photo saved on cloud")
+                    }
+                }
+            }
+            do {
+                try self.moc.save()
+            } catch {
+                printError(from: "photoView - coreData", message: error.localizedDescription)
+            }
         }
         .onAppear{
             // MARK: TODO: Cloud fetch
             // on appear fetch new photos
+            // MARK: Maybe set into coredata date and fetch only if cloud modification date is newer than coredata date [same for proto?]
+            Cloud.fetchPhoto{ res in
+                switch res {
+                    case.failure(let err):
+                        printError(from: "cloud fetchPhoto", message: err.localizedDescription)
+                
+                    case .success(let element):
+                        guard !photos.contains(where: {$0.recordID == element.recordID }) else { return }
+                        let photo = MyPhoto(context: moc)
+                        photo.local = true
+                        photo.name = Int16(element.name)
+                        photo.protoID = Int16(element.protoID)
+                        photo.value = element.value
+                        photo.recordID = element.recordID
+                        do {
+                            try moc.save()
+                            photos.append(photo)
+                        } catch {
+                            printError(from: "cloud fetchPhoto - coreData", message: error.localizedDescription)
+                        }
+                        if element.name > self.lastPhotoIndex {
+                            self.lastPhotoIndex = element.name
+                        }
+                }
+            }
         }
     }
 }

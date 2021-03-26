@@ -97,6 +97,7 @@ struct Cloud {
         
     }
     
+    // MARK: TODO: Fetch new photo (last modification )
     static func fetchPhoto(completition: @escaping (Result<CloudResultPhoto, Error>) -> ()) {
         let predicate = NSPredicate(value: true)
         let sort = NSSortDescriptor(key: "creationDate", ascending: true)
@@ -168,7 +169,7 @@ struct Cloud {
                 }
             }
         }
-        
+        CloudElements.container.privateCloudDatabase.add(operation)
     }
     
     // MARK: TODO

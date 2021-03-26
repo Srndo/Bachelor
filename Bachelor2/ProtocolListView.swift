@@ -15,7 +15,8 @@ struct ProtocolListView: View {
     var body: some View {
         Form{
             ForEach(DAs, id:\.self){ item in
-                NavigationLink(destination: ProtocolView(protoID: Int(item.protoID), lastPhotoNumber: photos.last(where: { $0.protoID == item.protoID })?.name )){
+                NavigationLink(destination: ProtocolView(protoID: Int(item.protoID), lastPhotoNumber: photos.last(where: { $0.protoID == item.protoID })?.name)
+                                .environment(\.managedObjectContext , moc)){
                     HStack{
                         VStack{
                             Text(item.client)
