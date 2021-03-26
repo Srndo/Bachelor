@@ -10,16 +10,16 @@ import SwiftUI
 struct PhotoView: View {
     @State private var show: Bool = false
     private var protoID: Int
-    private var photoIndex: Int
+    private var lastPhotoIndex: Int
     
     init(protoID: Int, photoIndex: Int){
         self.protoID = protoID
-        self.photoIndex = photoIndex
+        self.lastPhotoIndex = photoIndex
     }
     
     var body: some View {
         ZStack{
-            NavigationLink(destination: PhotosView()){
+            NavigationLink(destination: PhotosView(lastPhotoIndex: lastPhotoIndex, protoID: protoID)){
                 EmptyView()
             }
             .hidden()
@@ -41,6 +41,8 @@ struct PhotosView: View {
     @State private var showPicker: Bool = false
     @State private var source: UIImagePickerController.SourceType = .photoLibrary
     @State var photos: [MyPhoto] = []
+    @State var lastPhotoIndex: Int
+    @State var protoID: Int
     
     var body: some View {
         Form{
@@ -86,7 +88,7 @@ struct PhotosView: View {
                 // image picker needs to create MyPhoto
                 // find the value in photo
                 // call fce for saving photo into data
-//                ImagePicker(model: model, isShow: $showPicker, source: source)
+                ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
             }
             
             ForEach(photos, id:\.self) { photo in
@@ -99,9 +101,6 @@ struct PhotosView: View {
         }
         .onDisappear{
             // MARK: TODO: Cloud save
-            // on disappear save created photos on cloud
-            // if photosIndex is >0 than
-            // MARK: TODO: Cloud modify
         }
         .onAppear{
             // MARK: TODO: Cloud fetch

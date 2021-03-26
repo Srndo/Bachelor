@@ -9,7 +9,6 @@ import SwiftUI
 
 class ImageLoader: ObservableObject {
     @Published var image: UIImage?
-    let dirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
     func load(photo: MyPhoto){
         DispatchQueue.global().async{

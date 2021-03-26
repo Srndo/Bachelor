@@ -18,9 +18,8 @@ class Document: UIDocument {
     
     init(protoID: Int, proto: Proto? = nil) {
         self.proto = proto
-        
-        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        documentPath = path.appendingPathComponent("Documents").appendingPathComponent(String(protoID) + ".json")
+        let path = Dirs.shared.getProtosDir()!
+        documentPath = path.appendingPathComponent(String(protoID) + ".json")
         
         super.init(fileURL: documentPath)
     }
