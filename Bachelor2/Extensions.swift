@@ -50,65 +50,6 @@ extension Company {
     }
 }
 
-extension Photo {
-    mutating func saveToDisk(photo: UIImage?, name: String) {
-        guard let img = photo else { printError(from: "save photo", message: "\(name) for save is nil"); return }
-        guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "save photo", message: "Documents directory is nil"); return }
-        
-        self.name = name
-        self.relativePath = "Images/" + name + ".png"
-        let imagePath = docURL.appendingPathComponent(self.relativePath)
-        
-        DispatchQueue.global().async {
-            guard let data = img.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert \(name) to data"); return }
-            
-            do {
-                try data.write(to: imagePath)
-            } catch {
-                printError(from: "save photo", message: "Cannot write \(name) to disk")
-                print(error)
-                return
-            }
-            print("Photo \(name) saved")
-        }
-    }
-    
-    func asynLoadFromDisk(completitionBlock: @escaping (Image) -> ()) {
-        DispatchQueue.global().async {
-            guard self.relativePath != "" else { printError(from: "photo load", message: "Path of \(self.name) is empty"); return }
-            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "photo load", message: "Documents directory is nil"); return }
-            
-            let imagePath = docURL.appendingPathComponent(self.relativePath)
-            if let uiimage = UIImage(contentsOfFile: imagePath.path){
-                DispatchQueue.main.async {
-                    completitionBlock(Image(uiImage: uiimage))
-                }
-            }
-            DispatchQueue.main.async {
-                completitionBlock(Image(systemName: "photo"))
-            }
-        }
-    }
-    
-    func deleteFromDisk() {
-        DispatchQueue.global().async {
-            printError(from: "delete photo", message: "Cannot delete \(self.name) from disk")
-            guard self.relativePath != "" else { printError(from: "delete photo", message: "Path of \(self.name) is empty"); return }
-            guard let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { printError(from: "delete photo", message: "Documents directory is nil"); return }
-            
-            let url = docURL.appendingPathComponent(self.relativePath)
-            do {
-                try FileManager.default.removeItem(at: url)
-            } catch {
-                printError(from: "delete photo", message: "Cannot delete \(self.name) from disk")
-                print(error)
-                return
-            }
-            print("Photo deleted")
-        }
-    }
-}
-
 extension ProtocolView {
     private func save(from: String, message: String, errorViewMessage: String) {
         do {
@@ -153,14 +94,11 @@ extension ProtocolView {
         })
     }
     
-    // MARK: TODO: Internal ID not upadeted 
     func modify() {
         guard let document = document else { printError(from: "cloud modify", message: "Document is nil"); return }
         let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
         guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
         
-        self.proto.internalID = proto.internalID + 1
-        self.internalID = proto.internalID
         let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
         document.proto = proto
         document.updateChangeCount(.done)
@@ -223,5 +161,83 @@ extension ProtocolView {
                     
                 }
         }
+    }
+    
+    // MARK: TODO: nicer version of this balast
+    func showVersions(protoID: Int) -> AnyView {
+        guard protoID != -1 else { return AnyView(EmptyView()) }
+        guard self.internalID >= 0 else { return AnyView(EmptyView()) }
+        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return AnyView(EmptyView()) }
+        
+        struct MyView {
+            var id = UUID()
+            var view: AnyView
+        }
+        
+        var rows: [MyView] = []
+        for i in 0 ..< self.internalID {
+            let protoURL = outputURL.appendingPathComponent("\(i).pdf")
+            let zipURL = outputURL.appendingPathComponent("\(i).zip")
+            if FileManager.default.fileExists(atPath: protoURL.path) {
+                if FileManager.default.fileExists(atPath: zipURL.path) {
+                    rows.append(MyView(view: AnyView(
+                                        HStack{
+                                            Text("\(i).pdf")
+                                            Spacer()
+                                            Text("\(i).zip")
+                                        })))
+                } else {
+                    rows.append(MyView(view: AnyView(
+                                        HStack{
+                                            Text("\(i).pdf")
+                                            Spacer()
+                                        })))
+                }
+            }
+        }
+        
+        return AnyView(
+            ForEach(rows, id: \.id ){ row in
+                    row.view
+            }
+        )
+    }
+    
+    func createOutput(protoID: Int) {
+        self.proto.internalID = proto.internalID + 1
+        self.internalID = proto.internalID
+        
+        modify() // save incremented proto.id
+        
+        // MARK: TODO: wait until document saved
+        createProtoPDF(protoID: protoID)
+        createPhotosZIP(protoID: protoID)
+    }
+    
+    private func createProtoPDF(protoID: Int) {
+        // MARK: TODO: createProtoPDF
+        print("Warning: Create protocol PDF")
+        return
+            
+        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
+        // create PDF here
+    }
+    
+    private func createPhotosZIP(protoID: Int) {
+        // MARK: TODO createPhotosZIP
+        print("Warning: Create ZIP with photos")
+        return
+        
+        guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
+        
+        do {
+            let names = try FileManager.default.contentsOfDirectory(at: imagesURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+        } catch {
+            printError(from: "cretePhotosZIP", message: error.localizedDescription)
+            return
+        }
+        
+        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
+        // create photo zip here
     }
 }
