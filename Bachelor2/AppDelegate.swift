@@ -18,16 +18,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         let fileManager = FileManager.default
         
-        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
-        guard let docURL = documentsDirectory else { printError(from: "appStart", message: "Documents directory is nil"); return false }
-        let imagesPath = docURL.appendingPathComponent("Images")
-        let documentsPath = docURL.appendingPathComponent("Documents")
+        guard let imagesPath = Dirs.shared.getImagesDir() else { return false }
+        guard let documentsPath = Dirs.shared.getProtosDir() else { return false }
+        guard let outputPath = Dirs.shared.getOutputDir() else { return false }
         
         if !fileManager.fileExists(atPath: imagesPath.path) {
             do {
                 try fileManager.createDirectory(atPath: imagesPath.path, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print(error);
+                printError(from: "appDelegate", message: error.localizedDescription)
                 return false
             }
         }
@@ -36,7 +35,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             do {
                 try fileManager.createDirectory(atPath: documentsPath.path, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print(error);
+                printError(from: "appDelegate", message: error.localizedDescription)
+                return false
+            }
+        }
+        
+        if !fileManager.fileExists(atPath: outputPath.path) {
+            do {
+                try fileManager.createDirectory(atPath: outputPath.path, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                printError(from: "appDelegate", message: error.localizedDescription)
                 return false
             }
         }
@@ -46,16 +54,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if !zoneSet {
             let myRecordZone = CKRecordZone(zoneName: "Bachelor")
             let container = CKContainer(identifier: "iCloud.cz.vutbr.fit.xsesta06")
-            container.privateCloudDatabase.save(myRecordZone, completionHandler:
-            ({returnRecord, error in
+            container.privateCloudDatabase.save(myRecordZone){ returnRecord, error in
                 if let err = error {
-                    print(err.localizedDescription)
+                    printError(from: "appDelegate", message: err.localizedDescription)
                     UserDefaults.standard.set(false, forKey: "ZoneSet")
                 } else {
                     print("Zone created")
                     UserDefaults.standard.set(true, forKey: "ZoneSet")
                 }
-            }))
+            }
         }
         
         return true
