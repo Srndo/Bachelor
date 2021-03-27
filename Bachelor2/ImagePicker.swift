@@ -27,7 +27,7 @@ class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
         DispatchQueue.global().async {
             let uiimage = info[.originalImage] as? UIImage
             let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-            photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, number: self.index, value: -1.0)
+            photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: -1.0)
             DispatchQueue.main.async {
                 self.photos.append(photo)
             }
