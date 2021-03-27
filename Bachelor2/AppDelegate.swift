@@ -11,59 +11,36 @@ import CoreData
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        printError(from: "aplication fail to register remote notification", message: error.localizedDescription)
+        return
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        let notification = CKNotification(fromRemoteNotificationDictionary: userInfo)
+        guard let notif = notification else { return }
+        if notif.subscriptionID == "updates" {
+            CloudHelper.shared.doDiffFetch()
+            completionHandler(UIBackgroundFetchResult.newData)
+        }
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        let fileManager = FileManager.default
-        
         guard let imagesPath = Dirs.shared.getImagesDir() else { return false }
         guard let documentsPath = Dirs.shared.getProtosDir() else { return false }
         guard let outputPath = Dirs.shared.getOutputDir() else { return false }
+        guard Dirs.shared.createDir(at: imagesPath.path) == true else { return false }
+        guard Dirs.shared.createDir(at: documentsPath.path) == true else { return false }
+        guard Dirs.shared.createDir(at: outputPath.path) == true else { return false }
         
-        if !fileManager.fileExists(atPath: imagesPath.path) {
-            do {
-                try fileManager.createDirectory(atPath: imagesPath.path, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                printError(from: "appDelegate", message: error.localizedDescription)
-                return false
-            }
-        }
-        
-        if !fileManager.fileExists(atPath: documentsPath.path) {
-            do {
-                try fileManager.createDirectory(atPath: documentsPath.path, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                printError(from: "appDelegate", message: error.localizedDescription)
-                return false
-            }
-        }
-        
-        if !fileManager.fileExists(atPath: outputPath.path) {
-            do {
-                try fileManager.createDirectory(atPath: outputPath.path, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                printError(from: "appDelegate", message: error.localizedDescription)
-                return false
-            }
-        }
-        
-        let zoneSet: Bool = UserDefaults.standard.bool(forKey: "ZoneSet")
-        
-        if !zoneSet {
-            let myRecordZone = CKRecordZone(zoneName: "Bachelor")
-            let container = CKContainer(identifier: "iCloud.cz.vutbr.fit.xsesta06")
-            container.privateCloudDatabase.save(myRecordZone){ returnRecord, error in
-                if let err = error {
-                    printError(from: "appDelegate", message: err.localizedDescription)
-                    UserDefaults.standard.set(false, forKey: "ZoneSet")
-                } else {
-                    print("Zone created")
-                    UserDefaults.standard.set(true, forKey: "ZoneSet")
-                }
-            }
-        }
+        CloudHelper.shared.startZone()
+        UIApplication.shared.registerForRemoteNotifications()
+        CloudHelper.shared.startSubscript()
+        CloudHelper.shared.doDiffFetch()
+//        CloudHelper.shared.printSubscriptions()
+//        CloudHelper.shared.removeSubscriptions()
         
         return true
     }
