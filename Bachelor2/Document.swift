@@ -52,4 +52,31 @@ class Document: UIDocument {
     func delete() throws {
         try FileManager.default.removeItem(at: documentPath)
     }
+    
+    func modify(new proto: Proto) {
+        self.proto = proto
+        self.updateChangeCount(.done)
+        self.save(to: documentPath, for: .forOverwriting) { res in
+            if res {
+                print("Document with protocol \(proto.id) overwrited")
+            } else {
+                printError(from: "document overwrite", message: "Document with protocol \(proto.id) did not overwrited")
+            }
+        }
+    }
+    
+    func createNew(completition: (() -> ())? ) {
+        guard let proto = proto else { printError(from: "document save", message: "Protocol is nil"); return }
+        
+        self.save(to: documentPath, for: .forCreating) { res in
+            if res {
+                print("Document with protocol \(proto.id) saved")
+                if let completition = completition {
+                    completition()
+                }
+            } else {
+                printError(from: "document save", message: "Cannot save document with protocol \(proto.id)")
+            }
+        }
+    }
 }
