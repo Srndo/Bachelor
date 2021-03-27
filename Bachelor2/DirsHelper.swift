@@ -9,9 +9,10 @@ import Foundation
 
 class Dirs {
     static let shared = Dirs()
+    private let fileManager = FileManager.default
     
     private func getDocumentsDir() -> URL? {
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
         guard let docURL = documentsDirectory else { printError(from: "getDocumentsDir", message: "Documents directory is nil"); return nil}
         return docURL
     }
@@ -38,14 +39,12 @@ class Dirs {
         guard let docURL = getOutputDir() else { return nil }
         let outputURL = docURL.appendingPathComponent(String(protoID))
         
-        if !FileManager.default.fileExists(atPath: outputURL.path) {
-            do {
-                try FileManager.default.createDirectory(atPath: outputURL.path, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                printError(from: "getSpecificOutputDir", message: error.localizedDescription)
-                return nil
-            }
+        let created = createDir(at: outputURL.path)
+        
+        if !created {
+            return nil
         }
+        
         return outputURL
     }
     
@@ -53,15 +52,23 @@ class Dirs {
         guard let docURL = getImagesDir() else { return nil }
         let imagesURL = docURL.appendingPathComponent(String(protoID))
         
-        if !FileManager.default.fileExists(atPath: imagesURL.path) {
+        let created = createDir(at: imagesURL.path)
+        
+        if !created {
+            return nil
+        }
+        return imagesURL
+    }
+    
+    func createDir(at path: String) -> Bool {
+        if !fileManager.fileExists(atPath: path) {
             do {
-                try FileManager.default.createDirectory(atPath: imagesURL.path, withIntermediateDirectories: true, attributes: nil)
+                try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                printError(from: "getSpecificPhotoDir", message: error.localizedDescription)
-                return nil
+                printError(from: "create dir", message: error.localizedDescription)
+                return false
             }
         }
-        
-        return imagesURL
+        return true
     }
 }
