@@ -139,7 +139,7 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
-            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber, photos: $photos)
+            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber, photos: photos)
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
