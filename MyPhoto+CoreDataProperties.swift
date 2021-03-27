@@ -27,23 +27,18 @@ extension MyPhoto {
         return dir.appendingPathComponent("\(name).jpg")
     }
     
-    func savePhotoToDisk(photo: UIImage?, protoID: Int, number: Int, value: Double = -1.0) {
+    func savePhotoToDisk(photo: Data?, protoID: Int, name: Int, value: Double){
+        guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
+        guard let data = photo else { printError(from: "save photo", message: "Data is nil"); return }
+        savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value)
+
+    }
+    
+    func savePhotoToDisk(photo: UIImage?, protoID: Int, name: Int, value: Double) {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
-            print(dir)
             guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
             guard let data = photo.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert photo into data"); return }
-            self.name = Int16(number)
-            self.protoID = Int16(protoID)
-            let imagePath = dir.appendingPathComponent("\(number).jpg")
-            print(imagePath)
-            do {
-                try data.write(to: imagePath)
-            } catch {
-                printError(from: "save photo", message: error.localizedDescription)
-            }
-            self.local = true
-            self.value = value
-            print("Photo saved to disk")
+            savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value)
     }
     
     func deleteFromDisk() {
@@ -58,6 +53,21 @@ extension MyPhoto {
             }
             self.local = false
             print("Photo removed from disk")
+        }
+    }
+    
+    private func savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double) {
+        self.name = Int16(name)
+        self.protoID = Int16(protoID)
+        self.local = false
+        self.value = value
+        let imagePath = dir.appendingPathComponent("\(name).jpg")
+        do {
+            try data.write(to: imagePath)
+            self.local = true
+            print("Photo saved to disk")
+        } catch {
+            printError(from: "save photo", message: error.localizedDescription)
         }
     }
 

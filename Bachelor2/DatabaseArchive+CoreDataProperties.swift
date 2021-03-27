@@ -24,10 +24,21 @@ extension DatabaseArchive {
     @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var construction: String
     
+    
+    func decodeProto() -> Proto? {
+        guard let data = Data(base64Encoded: encodedProto) else {
+            printError(from: "decodeProto", message: "Cannot convert encodedProto to data")
+            return nil
+        }
+        guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
+            printError(from: "decodeProto", message: "Cannot decode encodedProto to Proto")
+            return nil
+        }
+        return proto
+    }
+    
     func fillWithData(encodedProto: String, local: Bool, recordID: CKRecord.ID? = nil) -> Proto? {
-        guard let data = Data(base64Encoded: encodedProto) else { printError(from: "fillWithData", message: "Cannot convert encodedProto to data"); return nil }
-
-        guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else { printError(from: "fillWithData", message: "Cannot decode encodedProto to Proto"); return nil }
+        guard let proto = decodeProto(encodedProto: encodedProto) else { return nil }
         
         self.encodedProto = encodedProto
         fill(proto: proto, local: local, recordID: recordID)
@@ -50,6 +61,18 @@ extension DatabaseArchive {
         self.protoID = Int16(proto.id)
         self.construction = proto.construction.name
         self.recordID = recordID
+    }
+    
+    private func decodeProto(encodedProto: String) -> Proto? {
+        guard let data = Data(base64Encoded: encodedProto) else {
+            printError(from: "decodeProto", message: "Cannot convert encodedProto to data")
+            return nil
+        }
+        guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
+            printError(from: "decodeProto", message: "Cannot decode encodedProto to Proto")
+            return nil
+        }
+        return proto
     }
 
 }
