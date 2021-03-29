@@ -239,6 +239,50 @@ class Cloud {
     }
     
     /**
+     # Save to cloud
+     Try to save new record into private database on cloud.
+     - Parameter recordType: Record type of CKRecord to create
+     - Parameter protoID: ID of protocol to save
+     - Parameter internalID: internalID of protocol to save
+     - Parameter pathTo: URL to ZIP file
+     - Parameter completition: Return CKRecord if record was saved else nil
+     */
+    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, pathTo zip: URL, completition: @escaping (CKRecord.ID?) -> ()){
+        guard recordType == RecordType.zip else {
+            printError(from: "save to cloud [zip]", message: "Record type is not correct")
+            completition(nil)
+            return
+        }
+        let recordID = CKRecord.ID(zoneID: zoneID)
+        let record = CKRecord(recordType: recordType, recordID: recordID)
+        record["protoID"] = protoID as CKRecordValue
+        record["internalID"] = internalID as CKRecordValue
+        
+        let asset = CKAsset(fileURL: zip)
+        record["zip"] = asset
+        
+        db.save(record) { record, err in
+            DispatchQueue.main.async {
+                if let err = err {
+                    printError(from: "cloud save [zip]", message: err.localizedDescription)
+                    completition(nil)
+                    return
+                }
+                
+                guard let record = record else {
+                    printError(from: "cloud save [zip]", message: "Returned record from cloud is nil")
+                    completition(nil)
+                    return
+                }
+                
+                print("ZIP saved on cloud")
+                completition(record.recordID)
+                return
+            }
+        }
+    }
+    
+    /**
      # Delete from cloud
      Try to remove record from private database on cloud.
      - Parameter recordID: Record ID of CKRecord to delete
@@ -394,7 +438,33 @@ class Cloud {
     }
     
     private func saveZip(record: CKRecord) {
-        //MARK: TODO
+        guard let protoID = record["protoID"] as? Int else {
+            printError(from: "cloud save zip", message: "ProtoID is nil")
+            return
+        }
+        
+        guard let internalID = record["internalID"] as? Int else {
+            printError(from: "cloud save zip", message: "internalID is nil")
+            return
+        }
+        
+        guard let asset = record["zip"] as? CKAsset else {
+            printError(from: "cloud save zip", message: "Asset is missing")
+            return
+        }
+        
+        guard let zipURL = asset.fileURL else {
+            printError(from: "cloud save zip", message: "ZIP URL is nil")
+            return
+        }
+        guard let data = try? Data(contentsOf: zipURL) else {
+            printError(from: "cloud save zip", message: "Cannot create data of CKAsset")
+            return
+        }
+        guard let saveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
+        
+        FileManager.default.createFile(atPath: saveURL.path, contents: data, attributes: nil)
+        
     }
     
     /**
