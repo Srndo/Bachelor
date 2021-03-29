@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CloudKit
+import CoreData.NSManagedObjectContext
 
 public func printError(from: String, message: String){
     print("ERROR [\(from)]: \(message)")
@@ -51,7 +52,7 @@ extension Company {
     }
 }
 
-extension NewProtoView {
+extension ProtocolView {
     func createNew() {
         self.document = Document(protoID: proto.id, proto: proto)
         guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
@@ -68,7 +69,7 @@ extension NewProtoView {
             }
             
             // save this encoded protocol to cloud
-            CloudHelper.shared.saveToCloud(recordType: CloudHelper.RecordType.protocols, protoID: proto.id, encodedProto: encoded) { recordID in
+            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.protocols, protoID: proto.id, encodedProto: encoded) { recordID in
                 // after succesfull cloud save, insert recordID into database
                 newDA.recordID = recordID
                 save(from: "cloud save", error: "RecordID not saved", errorViewMessage: "ERROR: Protokol sa nepodarilo zalohovať na cloud")
@@ -89,7 +90,7 @@ extension NewProtoView {
         let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
         document.modify(new: proto)
         
-        CloudHelper.shared.modifyOnCloud(recordID: recordID, proto: proto)
+        Cloud.shared.modifyOnCloud(recordID: recordID, proto: proto)
         
         save(from: "modify", error: "Cannot save modified proto", errorViewMessage: "ERROR: Zmeny sa nepodarilo uložiť")
         self.message = "Zmeny uložené"
@@ -179,195 +180,50 @@ extension NewProtoView {
     }
 }
 
-extension ProtocolView {
-    private func save(from: String, message: String, errorViewMessage: String) {
-        do {
-            try moc.save()
-        } catch {
-            printError(from: from, message: message)
-            self.message = errorViewMessage
-            print(error)
-        }
-    }
-    
-    func createNew() {
-        self.document = Document(protoID: proto.id, proto: proto)
-        guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
-        let path = document.documentPath
-        
-        document.save(to: path, for: .forCreating, completionHandler: { (res: Bool) in
-            print(res ? "Document saved " : "ERROR [UIDoc]: Cannot save document")
-            let newDA = DatabaseArchive(context: moc)
-            let encodedProto = newDA.fillWithData(proto: proto, local: true)
-            guard let encoded = encodedProto else { printError(from: "UIDoc", message: "Cannot save to cloud, encodedProto is nil"); return }
-            
-            Cloud.save(protoID: proto.id, encodedProto: encoded, completition: { result in
-                switch result {
-                case .failure(let err):
-                    printError(from: "cloud save", message: "Protocol not saved into cloud")
-                    print(err)
+extension ProtocolListView {
+    func remove(at offSets: IndexSet) {
+        for index in offSets {
+            let remove = DAs[index]
+            guard let recordID = remove.recordID else {
+                printError(from: "remove protocol", message: "RecordID of protocol \(remove.protoID) is nil")
+                return
+            }
+            // MARK: Cloud delete
+            Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
+                guard let recordID = recordID else { return }
+                guard let removeCloud = DAs.first(where: { $0.recordID == recordID }) else {
+                    printError(from: "remove cloud", message: "RecordID returned from cloud not exist in core data")
                     return
-                    
-                case .success(let element):
-                    newDA.recordID = element.recordID
-                    save(from: "cloud save", message: "RecordID not saved", errorViewMessage: "ERROR: Protokol sa nepodarilo zalohovať na cloud")
                 }
-            })
-            
-            save(from: "UIDoc", message: "Protocol not saved into core data", errorViewMessage: "ERROR: Protokol sa nepodarilo uložiť")
-            self.proto = Proto(id: -1)
-            self.ico = ""
-            self.dic = ""
-            self.reqVal = "" 
-            self.message = "Protokol uložený"
-        })
-    }
-    
-    func modify() {
-        guard let document = document else { printError(from: "cloud modify", message: "Document is nil"); return }
-        let DA = DAs.first(where: { $0.protoID == Int16(proto.id) })!
-        guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
-        
-        let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
-        document.proto = proto
-        document.updateChangeCount(.done)
-        document.save(to: document.documentPath, for: .forOverwriting){ res in
-            if res == true {
-                print("Document with protocol \(proto.id) overwrited")
-            } else {
-                printError(from: "cloud fetch", message: "Document with protocol \(proto.id) did not overwrited")
-            }
-        }
-        
-
-        // MARK: Cloud modify
-        Cloud.modify(item: proto, recordID: recordID){ res in
-            switch res {
-                case .failure(let err):
-                    printError(from: "cloud modify", message: err.localizedDescription)
+                guard removeCloud == remove else {
+                    printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same")
                     return
-                case .success(_):
-                    
-                    print("Element modified on cloud")
-                    return
-            }
-            
-        }
-        save(from: "modify", message: "Cannot save modified proto", errorViewMessage: "ERROR: Zmeny sa nepodarilo uložiť")
-        self.message = "Zmeny uložené"
-    }
-    
-    func openDocument() {
-        guard protoID != -1 else { return }
-        document = Document(protoID: protoID)
-        guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
-        
-        document.open { res in
-            if res {
-                print("Document with protocol \(protoID) opened.")
-                DispatchQueue.main.async {
-                    guard let proto = document.proto else { printError(from: "protoView-document", message: "Document protocol is nil"); return }
-                    self.proto = proto
-                    self.ico = String(proto.client.ico)
-                    self.dic = String(proto.client.dic)
-                    self.reqVal = String(proto.method.requestedValue)
-                    self.internalID = proto.internalID
                 }
-            } else {
-                printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
+                removePhotos()
+                removeDocument(protoID: Int(remove.protoID))
+                moc.delete(remove)
+                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
             }
         }
     }
     
-    func closeDocument() {
-        if let document = document {
-                document.close{ res in
-                    if res {
-                        print("Document with protocol \(protoID) closed")
-                    } else {
-                        printError(from: "protoView-document", message: "Document with protocol \(protoID) did not closed")
-                    }
-                    
-                }
-        }
-    }
-    
-    // MARK: TODO: nicer version of this balast
-    func showVersions(protoID: Int) -> AnyView {
-        guard protoID != -1 else { return AnyView(EmptyView()) }
-        guard self.internalID >= 0 else { return AnyView(EmptyView()) }
-        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return AnyView(EmptyView()) }
+    func removeDocument(protoID: Int){
+        let document = Document(protoID: protoID)
         
-        struct MyView {
-            var id = UUID()
-            var view: AnyView
-        }
-        
-        var rows: [MyView] = []
-        for i in 0 ..< self.internalID {
-            let protoURL = outputURL.appendingPathComponent("\(i).pdf")
-            let zipURL = outputURL.appendingPathComponent("\(i).zip")
-            if FileManager.default.fileExists(atPath: protoURL.path) {
-                if FileManager.default.fileExists(atPath: zipURL.path) {
-                    rows.append(MyView(view: AnyView(
-                                        HStack{
-                                            Text("\(i).pdf")
-                                            Spacer()
-                                            Text("\(i).zip")
-                                        })))
-                } else {
-                    rows.append(MyView(view: AnyView(
-                                        HStack{
-                                            Text("\(i).pdf")
-                                            Spacer()
-                                        })))
-                }
+        if FileManager.default.fileExists(atPath: document.documentPath.path) {
+            do {
+                try document.delete()
+                print("Document removed from local storage")
+            } catch {
+                printError(from: "remove document", message: "Cannot remove document for protocol[\(protoID)]")
+                print(error)
             }
         }
-        
-        return AnyView(
-            ForEach(rows, id: \.id ){ row in
-                    row.view
-            }
-        )
     }
     
-    func createOutput(protoID: Int) {
-        self.proto.internalID = proto.internalID + 1
-        self.internalID = proto.internalID
-        
-        modify() // save incremented proto.id
-        
-        // MARK: TODO: wait until document saved
-        createProtoPDF(protoID: protoID)
-        createPhotosZIP(protoID: protoID)
-    }
-    
-    private func createProtoPDF(protoID: Int) {
-        // MARK: TODO: createProtoPDF
-        print("Warning: Create protocol PDF")
-        return
-            
-//        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
-        // create PDF here
-    }
-    
-    private func createPhotosZIP(protoID: Int) {
-        // MARK: TODO createPhotosZIP
-        print("Warning: Create ZIP with photos")
-        return
-        
-//        guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
-//
-//        do {
-//            let names = try FileManager.default.contentsOfDirectory(at: imagesURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-//        } catch {
-//            printError(from: "cretePhotosZIP", message: error.localizedDescription)
-//            return
-//        }
-//
-//        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
-        // create photo zip here
+    func removePhotos(){
+        // MARK: TODO
+        print("Warning: Not removing photos")
     }
 }
 
@@ -388,6 +244,18 @@ extension UserDefaults {
             } else {
                 self.removeObject(forKey: "changeToken")
             }
+        }
+    }
+}
+
+extension NSManagedObjectContext {
+    public func trySave(errorFrom: String, error message: String){
+        do {
+            try self.save()
+        } catch {
+            printError(from: errorFrom, message: message)
+            print(error)
+            return
         }
     }
 }
