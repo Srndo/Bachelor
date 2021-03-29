@@ -7,53 +7,20 @@
 
 import SwiftUI
 
-struct DropDown<Content: View>: View {
-    let header: String
-    @State var show: Bool = false
-    let content: () -> Content
-    
-    init(header: String, show: Bool = false, content: @escaping () -> Content){
-        self.header = header
-        _show = State(initialValue: show)
-        self.content = content
-    }
-    
-    var body: some View {
-        HStack{
-            Text(header)
-                .bold()
-            Spacer()
-            show ? Image(systemName: "chevron.down").foregroundColor(.gray) : Image(systemName: "chevron.right").foregroundColor(.gray)
-        }
-        .onTapGesture {
-            show.toggle()
-        }
-        if show {
-            self.content()
-                .foregroundColor(.black)
-        }
-    }
-}
-
 struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var allPhotos: FetchedResults<MyPhoto>
     
-    @State var modified: Bool = false
     @State var internalID: Int = -1
     let protoID: Int
-    
     @State var message: String = ""
     @State var proto: Proto
-    
     @State var ico: String = ""
     @State var dic: String = ""
     @State var reqVal: String = ""
-    
     @State var document: Document?
     @State var photos: [MyPhoto] = []
-    
     private var lastPhotoNumber: Int
     
     init(protoID: Int? = nil, lastPhotoNumber: Int16? = nil){
@@ -185,7 +152,7 @@ struct ProtocolView: View {
                             Spacer()
                             Button("Vytvor výstup") {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
-                                createOutput(protoID: proto.id)
+//                                createOutput(protoID: proto.id)
                             }
                             .padding(8)
                             .background(Color.blue)
@@ -196,7 +163,7 @@ struct ProtocolView: View {
                     }
                     
                     Section(header: Text("Verzie")) {
-                        showVersions(protoID: protoID)
+//                        showVersions(protoID: protoID)
                     }
                 }
         }
@@ -209,10 +176,11 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-            print("DAs.count:", DAs.count)
+            // in start app was diff fetch on appear it chceck if fetch is still in progress if not
+            // will insert every changes into database
+            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: DAs)
             if protoID == -1 {
                 proto.id = Int(DAs.last?.protoID ?? 0) + 1
-                print(proto.id)
             }
             photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             openDocument()
@@ -220,11 +188,5 @@ struct ProtocolView: View {
         .onDisappear{
             closeDocument()
         }
-    }
-}
-
-struct ProtocolView_Previews: PreviewProvider {
-    static var previews: some View {
-        ProtocolView()
     }
 }

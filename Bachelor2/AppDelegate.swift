@@ -20,7 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let notification = CKNotification(fromRemoteNotificationDictionary: userInfo)
         guard let notif = notification else { return }
         if notif.subscriptionID == "updates" {
-            CloudHelper.shared.doDiffFetch()
+            Cloud.shared.doDiffFetch()
             completionHandler(UIBackgroundFetchResult.newData)
         }
     }
@@ -31,14 +31,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         guard let imagesPath = Dirs.shared.getImagesDir() else { return false }
         guard let documentsPath = Dirs.shared.getProtosDir() else { return false }
         guard let outputPath = Dirs.shared.getOutputDir() else { return false }
-        guard Dirs.shared.createDir(at: imagesPath.path) == true else { return false }
-        guard Dirs.shared.createDir(at: documentsPath.path) == true else { return false }
-        guard Dirs.shared.createDir(at: outputPath.path) == true else { return false }
+        guard Dirs.shared.createDir(at: imagesPath.path) == true else { return false } // dir for store all images in protocols
+        guard Dirs.shared.createDir(at: documentsPath.path) == true else { return false } // dir for store UIDocuments
+        guard Dirs.shared.createDir(at: outputPath.path) == true else { return false } // dir for strore output of protocols [pdf, zip]
         
-        CloudHelper.shared.startZone()
+        Cloud.shared.startZone()
         UIApplication.shared.registerForRemoteNotifications()
-        CloudHelper.shared.startSubscript()
-        CloudHelper.shared.doDiffFetch()
+        Cloud.shared.startSubscript()
+        Cloud.shared.doDiffFetch()
 //        CloudHelper.shared.printSubscriptions()
 //        CloudHelper.shared.removeSubscriptions()
         

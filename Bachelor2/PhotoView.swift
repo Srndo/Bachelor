@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import CoreData.NSManagedObjectContext
 
 struct PhotoView: View {
     @Environment(\.managedObjectContext) var moc
@@ -93,9 +92,7 @@ struct PhotosView: View {
             }
             .sheet(isPresented: $showPicker){
                 // MARK: TODO: ImagePicker
-                // image picker needs to create MyPhoto
                 // find the value in photo
-                // call fce for saving photo into data
                 ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
             }
             
@@ -108,62 +105,21 @@ struct PhotosView: View {
             }.onDelete(perform: deletePhoto)
         }
         .onDisappear{
-            // MARK: TODO: Cloud save
-            print("PhotoView, photos count", photos.count)
+            // MARK: Cloud save
             for photo in photos {
                 guard photo.managedObjectContext == nil else { continue }
                 moc.insert(photo)
-                CloudHelper.shared.saveToCloud(recordType: CloudHelper.RecordType.photos, photo: photo){ recordID in
+                Cloud.shared.saveToCloud(recordType: Cloud.RecordType.photos, photo: photo){ recordID in
                     photo.recordID = recordID
                 }
-//                Cloud.savePhoto(protoID: Int(photo.protoID), value: photo.value, name: Int(photo.name), path: path) { res in
-//                    switch res {
-//                        case .failure(let err):
-//                            printError(from: "cloud savePhoto", message: err.localizedDescription)
-//                            return
-//
-//                        case .success(_):
-//                            print("Photo saved on cloud")
-//                    }
-//                }
             }
             moc.trySave(errorFrom: "photoView", error: "Cannot saved photos")
-        }
-        .onAppear{
-            // MARK: TODO: Cloud fetch
-            // on appear fetch new photos
-            // MARK: Maybe set into coredata date and fetch only if cloud modification date is newer than coredata date [same for proto?]
-//            Cloud.fetchPhoto{ res in
-//                switch res {
-//                    case.failure(let err):
-//                        printError(from: "cloud fetchPhoto", message: err.localizedDescription)
-//
-//                    case .success(let element):
-//                        guard !photos.contains(where: {$0.recordID == element.recordID }) else { return }
-//                        let photo = MyPhoto(context: moc)
-//                        photo.local = true
-//                        photo.name = Int16(element.name)
-//                        photo.protoID = Int16(element.protoID)
-//                        photo.value = element.value
-//                        photo.recordID = element.recordID
-//                        do {
-//                            try moc.save()
-//                            photos.append(photo)
-//                        } catch {
-//                            printError(from: "cloud fetchPhoto - coreData", message: error.localizedDescription)
-//                        }
-//                        if element.name > self.lastPhotoIndex {
-//                            self.lastPhotoIndex = element.name
-//                        }
-//                }
-//            }
         }
     }
     
     private func deletePhoto(at offsets: IndexSet) {
         for index in offsets {
             let remove = photos[index]
-            print(remove)
             guard let recordID = remove.recordID else {
                 printError(from: "remove photo", message: "RecordID of photo \(remove.protoID) is nil")
                 remove.deleteFromDisk()
@@ -172,7 +128,7 @@ struct PhotosView: View {
                 moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
                 return
             }
-            CloudHelper.shared.deleteFromCloud(recordID: recordID) { recordID in
+            Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
                 guard let recordID = recordID else { return }
                 guard let removeCloud = photos.first(where: { $0.recordID == recordID }) else {
                     printError(from: "remove photo cloud", message: "RecordID returned from cloud not exist in photos contained by proto")
@@ -187,18 +143,6 @@ struct PhotosView: View {
                 moc.delete(remove)
                 moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
             }
-        }
-    }
-}
-
-extension NSManagedObjectContext {
-    public func trySave(errorFrom: String, error message: String){
-        do {
-            try self.save()
-        } catch {
-            printError(from: errorFrom, message: message)
-            print(error)
-            return
         }
     }
 }

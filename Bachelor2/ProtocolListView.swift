@@ -6,12 +6,12 @@
 //
 
 import SwiftUI
-import CloudKit
 
 struct ProtocolListView: View {
     @Environment(\.managedObjectContext) var moc
-    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) private var DAs: FetchedResults<DatabaseArchive>
+    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var photos: FetchedResults<MyPhoto>
+    
     var body: some View {
         Form{
             ForEach(DAs, id:\.self){ item in
@@ -28,122 +28,7 @@ struct ProtocolListView: View {
                 }
             }.onDelete(perform: remove)
         }.onAppear{
-            // MARK: Cloud fetch
-            Cloud.fetch{ result in
-                switch result {
-                case .failure(let error):
-                    printError(from: "cloud fetch", message: "Cannot fetched protocols")
-                    print(error)
-                    return
-                        
-                case .success(let element):
-                    guard let cloudEncodedProto = element.encodedProto else { printError(from: "cloud fetch", message: "Encoded proto missing"); return }
-                    
-                    // if exist local copy of proto -> update proto
-                    if let DA = DAs.first(where: { $0.recordID == element.recordID }){
-                        guard DA.encodedProto != cloudEncodedProto else { return }
-                        guard let proto = DA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.recordID) else { return }
-                        let document = Document(protoID: proto.id)
-                        let path = document.documentPath
-                        
-                        // check if document with this proto exist
-                        if FileManager.default.fileExists(atPath: path.path){
-                            document.proto = proto
-                            document.updateChangeCount(.done)
-                            document.save(to: path, for: .forOverwriting){ res in
-                                if res == true {
-                                    print("Document with protocol \(proto.id) overwrited")
-                                } else {
-                                    printError(from: "cloud fetch", message: "Document with protocol \(proto.id) did not overwrited")
-                                }
-                            }
-                            save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
-                            return
-                        }
-                    }
-                    
-                    // if fetched proto doesnt exist locally
-                    let newDA = DatabaseArchive(context: moc)
-                    guard let proto = newDA.fillWithData(encodedProto: cloudEncodedProto, local: false, recordID: element.recordID) else { return }
-                    
-                    let document = Document(protoID: proto.id, proto: proto)
-                    let path = document.documentPath
-                    
-                    document.save(to: path, for: .forCreating){ res in
-                        if res {
-                            newDA.local = true
-                            print("Fetched document created")
-                            save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
-                        } else {
-                            printError(from: "cloud fetch", message: "Cannot create fetched document")
-                        }
-                    }
-                    save(from: "cloud fetch", message: "Cannot save fetched item into coredata")
-                    
-                }
-            
-            }
+            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: photos, allDAs: DAs)
         }
-    }
-    
-    private func save(from: String, message: String) {
-        do {
-            try moc.save()
-        } catch {
-            printError(from: from, message: message)
-            print(error)
-            return
-        }
-    }
-    
-    private func remove(at offSets: IndexSet) {
-        for index in offSets {
-            let remove = DAs[index]
-            guard let recordID = remove.recordID else { printError(from: "remove", message: "RecordID of protocol \(remove.protoID) is nil"); return }
-            // MARK: Cloud delete
-            Cloud.delete(recordID: recordID){ res in
-                switch res {
-                case .failure(let err):
-                    print(err)
-                    return
-                    
-                case .success(let recordID):
-                    let recordName = recordID
-                    let removeCloud = DAs.first(where: { $0.recordID == recordName })
-                    guard removeCloud != nil else { printError(from: "remove cloud", message: "RecordID returned from cloud not exist in core data"); return }
-                    guard removeCloud! == remove else { printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same"); return }
-                    removePhotos()
-                    removeDocument(protoID: Int(remove.protoID))
-                    moc.delete(remove)
-                    save(from: "remove cloud", message: "Cannot saved managed object context")
-                }
-            }
-        }
-    }
-    
-    private func removeDocument(protoID: Int){
-        let document = Document(protoID: protoID)
-        let path = document.documentPath
-        
-        if FileManager.default.fileExists(atPath: path.path) {
-            do {
-                try FileManager.default.removeItem(at: path)
-                print("Document removed from local storage")
-            } catch {
-                printError(from: "remove document", message: "Cannot remove document for protocol[\(protoID)]")
-                print(error)
-            }
-        }
-    }
-    
-    private func removePhotos(){
-        // MARK: TODO
-        print("Warning: Not removing photos")
-    }
-}
-
-struct ProtocolList_Previews: PreviewProvider {
-    static var previews: some View {
-        ProtocolListView()
     }
 }

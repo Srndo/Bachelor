@@ -12,8 +12,7 @@ struct ContentView: View {
     var body: some View {
         TabView{
             NavigationView{
-//                ProtocolView()
-                NewProtoView()
+                ProtocolView()
             }
             .tabItem{
                 VStack{
@@ -24,8 +23,7 @@ struct ContentView: View {
             .tag(0)
             
             NavigationView{
-//                ProtocolListView()
-                NewProtoListView()
+                ProtocolListView()
             }
             .tabItem{
                 VStack{
