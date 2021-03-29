@@ -9,14 +9,18 @@ import CloudKit
 import SwiftUI
 import CoreData.NSManagedObjectContext
 
-class CloudHelper {
+/**
+ # Cloud
+ Class contains functions to control cloud synchronizations with local database and files.
+ */
+class Cloud {
     struct RecordType {
         static let protocols = "Protocols"
         static let zip = "Outputs"
         static let photos = "Photos"
     }
     
-    static let shared = CloudHelper()
+    static let shared = Cloud()
     lazy var container = CKContainer(identifier: "iCloud.cz.vutbr.fit.xsesta06")
     lazy var db = container.privateCloudDatabase
     lazy var zoneID = CKRecordZone(zoneName: "Bachelor").zoneID
@@ -34,6 +38,11 @@ class CloudHelper {
     private var fetching: Bool = false
     
     
+    /**
+     # Start zone
+     Check if zone "Bachelor" was created.
+     If not create zone.
+     */
     func startZone() {
         let myRecordZone = CKRecordZone(zoneName: "Bachelor")
         let zoneSet: Bool = UserDefaults.standard.bool(forKey: "ZoneSet")
@@ -51,6 +60,10 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Print subscriptions
+     Fetch all substriction from private database and print it.
+     */
     func printSubscriptions() {
         db.fetchAllSubscriptions { subscriptions, err in
             if let err = err {
@@ -69,12 +82,15 @@ class CloudHelper {
 
     }
     
+    /**
+     # Start subscription
+     Create substcription with subscriptionID = "updates"
+     */
     func startSubscript() {
         let subscription = CKDatabaseSubscription(subscriptionID: "updates")
         let notifInfo = CKSubscription.NotificationInfo()
         notifInfo.shouldSendContentAvailable = true
         subscription.notificationInfo = notifInfo
-        print(subscription)
         db.save(subscription) { _, err in
             if let err = err {
                 printError(from: "start subscription", message: err.localizedDescription)
@@ -82,6 +98,10 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Remove subscription
+        Remove subscription with subscriptionID = "updates"
+     */
     func removeSubscriptions() {
         db.delete(withSubscriptionID: "updates"){ string, err in
             if let string = string {
@@ -102,6 +122,11 @@ class CloudHelper {
 //        }
     }
     
+    /**
+     # Diff Fetch
+     Fetch only records that have changed since that anchor.
+     Anchor is server token which is updated by every succesfull call of this function.
+     */
     func doDiffFetch() {
         fetching = true
         var toSave: [CKRecord] = []
@@ -130,6 +155,14 @@ class CloudHelper {
         db.add(operation)
     }
     
+    /**
+     # Save to cloud
+     Try to save new record into private database on cloud.
+     - Parameter recordType: Record type of CKRecord to create
+     - Parameter protoID: ID of protocol to save
+     - Parameter encodedProto: Encoded protocol as String
+     - Parameter completition: Return CKRecord if record was saved else nil
+     */
     func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, encodedProto: String, completition: @escaping (CKRecord.ID?) -> ()) {
         guard recordType == RecordType.protocols else {
             printError(from: "save to cloud [protocol]", message: "Record type is not correct")
@@ -158,7 +191,13 @@ class CloudHelper {
         }
     }
     
-
+    /**
+     # Save to cloud
+     Try to save new record into private database on cloud.
+     - Parameter recordType: Record type of CKRecord to create
+     - Parameter photo: Instance of MyPhoto (NSManagedObject)
+     - Parameter completition: Return CKRecord if record was saved else nil
+     */
     func saveToCloud(recordType: CKRecord.RecordType, photo: MyPhoto, completition: @escaping (CKRecord.ID?) -> ()){
         guard recordType == RecordType.photos else {
             printError(from: "save to cloud [photo]", message: "Record type is not correct")
@@ -199,7 +238,12 @@ class CloudHelper {
         }
     }
     
-    
+    /**
+     # Delete from cloud
+     Try to remove record from private database on cloud.
+     - Parameter recordID: Record ID of CKRecord to delete
+     - Parameter completition: Return CKRecord if record was saved else nil
+     */
     func deleteFromCloud(recordID: CKRecord.ID, completition: @escaping (CKRecord.ID?) -> ()) {
         db.delete(withRecordID: recordID) { recordID, err in
             DispatchQueue.main.async {
@@ -220,7 +264,12 @@ class CloudHelper {
         }
     }
     
-
+    /**
+     # Modify on cloud
+     Try to modify record in private database on cloud.
+     - Parameter recordID: Record ID of CKRecord to delete
+     - Parameter proto: Instance of Proto (NSManagedObject)
+     */
     func modifyOnCloud(recordID: CKRecord.ID, proto: Proto) {
         db.fetch(withRecordID: recordID) { record, err in
             if let err = err {
@@ -248,6 +297,12 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Save records
+     Will save new fetched records into class variables as instance of NSManagedObject (inserted into nil).
+     This new objects can be inserted into local database and files by fucntion [insertFetchChangeIntoCoreData]
+     - Parameter toSave: New CKRecords
+     */
     private func saveRecords(toSave: [CKRecord]) {
         for record in toSave {
             switch record.recordType {
@@ -269,6 +324,12 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Save photo
+     Takes one CKRecord and if contains all needed informations create MyPhoto.
+     And create (modify) local copy of that photo in .../Documents/{proto.id}/
+     - Parameter record: record to save as MyPhoto
+     */
     private func savePhoto(record: CKRecord) {
         let recordID = record.recordID
         guard let protoID = record["protoID"] as? Int else {
@@ -309,6 +370,11 @@ class CloudHelper {
         
     }
     
+    /**
+     # Save proto
+     Takes one CKRecord and if contains all needed informations create Proto.
+     - Parameter record: record to save as MyPhoto
+     */
     private func saveProto(record: CKRecord) {
         let recordID = record.recordID
         guard let _ = record["protoID"] as? Int else {
@@ -331,6 +397,14 @@ class CloudHelper {
         //MARK: TODO
     }
     
+    /**
+     # Insert fetch changes into local database
+     If class variables contains NSMangedObjects is not empty.
+     Create (modify, delete) this objects.
+     - Parameter moc: NSManagedObjectContext into which is changes inserted
+     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
+     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
+     */
     func insertFetchChangeIntoCoreData(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>) {
         guard fetching == false else { return }
         
@@ -344,17 +418,20 @@ class CloudHelper {
         }
         
         if !toDelete.isEmpty || newRecords {
-            do {
-                try moc.save()
-                photos = []
-                DAs = []
-                toDelete = [:]
-            } catch {
-                printError(from: "insert fetch into DB", message: error.localizedDescription)
-            }
+            moc.trySave(errorFrom: "insert fetch into DB", error: "Cannot save fetched changes")
+            photos = []
+            DAs = []
+            toDelete = [:]
         }
     }
     
+    /**
+     # Delete records
+     Remove objects (saved in class variable) from local database and his files from sandbox.
+     - Parameter moc: NSManagedObjectContext
+     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
+     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
+     */
     private func deleteRecords(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>){
         for (recordID, recordType) in toDelete {
             if recordType == RecordType.protocols {
@@ -362,8 +439,13 @@ class CloudHelper {
                 let document = Document(protoID: Int(remove.protoID))
                 do {
                     try document.delete()
-                    moc.delete(remove)
                     // MARK: TODO remove all photos that contains remove.protoID
+                    let removePhotos = allPhotos.filter{ $0.protoID == remove.protoID }
+                    for photo in removePhotos {
+                        photo.deleteFromDisk()
+                        moc.delete(photo)
+                    }
+                    moc.delete(remove)
                 } catch {
                     printError(from: "delete record [protocol]", message: error.localizedDescription)
                     continue
@@ -378,6 +460,13 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Insert fetched photos into local database
+     Insert new fetched photos changes into local database.
+     - Parameter moc: NSManagedObjectContext into which is changes inserted
+     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
+     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
+     */
     private func insertIntoMocPhotos(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>) {
         for photo in photos {
             if let update = allPhotos.first(where: { $0.protoID == photo.protoID && $0.name == photo.name }) {
@@ -392,6 +481,13 @@ class CloudHelper {
         }
     }
     
+    /**
+     # Insert fetched protos into local database
+     Insert new fetched protos changes into local database.
+     - Parameter moc: NSManagedObjectContext into which is changes inserted
+     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
+     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
+     */
     private func insertIntoMocDAs(moc: NSManagedObjectContext, allDAs: FetchedResults<DatabaseArchive>) {
         for da in DAs {
             if let update = allDAs.first(where: { $0.protoID == da.protoID }) {
