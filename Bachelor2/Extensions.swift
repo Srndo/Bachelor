@@ -8,7 +8,7 @@
 import SwiftUI
 import CloudKit
 import CoreData.NSManagedObjectContext
-
+import Zip
 public func printError(from: String, message: String){
     print("ERROR [\(from)]: \(message)")
 }
@@ -138,8 +138,11 @@ extension ProtocolView {
         modify() // save incremented proto.id
         
         // MARK: TODO: wait until document saved
+        guard let zipURL = createPhotosZIP(protoID: protoID) else { return }
+        Cloud.shared.saveToCloud(recordType: Cloud.RecordType.zip, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ _ in}
+        // TODO: Cloud zip save
         createProtoPDF(protoID: protoID)
-        createPhotosZIP(protoID: protoID)
+        return
     }
     
     private func createProtoPDF(protoID: Int) {
@@ -151,22 +154,24 @@ extension ProtocolView {
         // create PDF here
     }
     
-    private func createPhotosZIP(protoID: Int) {
-        // MARK: TODO createPhotosZIP
-        print("Warning: Create ZIP with photos")
-        return
-        
-//        guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
-//
-//        do {
-//            let names = try FileManager.default.contentsOfDirectory(at: imagesURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-//        } catch {
-//            printError(from: "cretePhotosZIP", message: error.localizedDescription)
-//            return
-//        }
-//
-//        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
-        // create photo zip here
+    private func createPhotosZIP(protoID: Int) -> URL? {
+        guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return nil } // dir where photos is stored
+        guard let names = Dirs.shared.getConentsOfDir(at: imagesURL) else { return nil } // photos urls
+        guard let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return nil }
+
+        do {
+            try Zip.zipFiles(paths: names, zipFilePath: zipURL, password: nil, progress: { (progres) -> () in
+                print(progres)
+            })
+        } catch {
+            printError(from: "cretePhotosZIP", message: error.localizedDescription)
+            return  nil
+        }
+
+        // MARK: TODO: Remove local copy of those photos
+//        self.photos
+        print("ZIP with photos of protocol \(self.proto.id) was created")
+        return zipURL
     }
     
     private func save(from: String, error message: String, errorViewMessage: String) {
