@@ -24,19 +24,37 @@ class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        DispatchQueue.global().async {
-            let uiimage = info[.originalImage] as? UIImage
-            let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-            photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: -1.0)
-            DispatchQueue.main.async {
-                self.photos.append(photo)
+        guard let uiimage = info[.originalImage] as? UIImage else { return }
+        if let cgImage = uiimage.cgImage {
+            var dic = [Int:CGImage]()
+            dic[self.index] = cgImage
+            TextRecognizer().regognize(from: dic) { recognized in
+                self.createMyPhoto(uiimage: uiimage, recognized:  recognized)
             }
+        } else {
+            printError(from: "image picker", message: "Cannot make auto recognition of value.")
+            createMyPhoto(uiimage: uiimage)
         }
         isShow = false
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         isShow = false
+    }
+    
+    private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
+        let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
+        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized))
+        DispatchQueue.main.async {
+            self.photos.append(photo)
+        }
+    }
+    
+    private func recognizedValue(name: Int, recognized: [Int:String]?) -> Double {
+        guard let recognized = recognized else { return -1.0 }
+        guard let valString = recognized[name] else { return -1.0 }
+        guard let value = Double(valString) else { return -1.0 }
+        return value
     }
 }
 
@@ -57,6 +75,7 @@ struct ImagePicker: UIViewControllerRepresentable{
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
         let picker = UIImagePickerController()
+        picker.allowsEditing = false
         picker.sourceType = source
         picker.delegate = context.coordinator
         return picker
