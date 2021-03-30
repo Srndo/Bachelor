@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Zip
 
 struct PhotoView: View {
     @Environment(\.managedObjectContext) var moc
@@ -13,17 +14,19 @@ struct PhotoView: View {
     @State private var show: Bool = false
     @State private var photos: [MyPhoto]
     private var protoID: Int
+    private var internalID: Int
     private var lastPhotoIndex: Int
     
-    init(protoID: Int, photoIndex: Int, photos: [MyPhoto]){
+    init(protoID: Int, internalID: Int, photoIndex: Int, photos: [MyPhoto]){
         self.protoID = protoID
         self.lastPhotoIndex = photoIndex
+        self.internalID = internalID
         _photos = State(initialValue: photos)
     }
     
     var body: some View {
         ZStack{
-            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID)
+            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID, internalID: internalID)
                             .environment(\.managedObjectContext , moc)){
                 EmptyView()
             }
@@ -50,6 +53,8 @@ struct PhotosView: View {
     @Binding var photos: [MyPhoto]
     @State var lastPhotoIndex: Int
     @State var protoID: Int
+    @State var internalID: Int
+    @State private var showAllert: Bool = false
     
     var body: some View {
         Form{
@@ -66,29 +71,7 @@ struct PhotosView: View {
                 Spacer()
             }
             .actionSheet(isPresented: $actionShow){
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    return ActionSheet(title: Text("Urob fotku alebo vyber z kniznice"), message: Text(""), buttons:
-                        [.default(Text("Kniznica"), action: {
-                            self.source = .photoLibrary
-                            self.showPicker.toggle()
-                        }),
-                         .default(Text("Kamera"), action: {
-                            self.source = .camera
-                            self.showPicker.toggle()
-                         }),
-                        .cancel(Text("Zavri"))
-                        ]
-                    )
-                } else {
-                    return ActionSheet(title: Text("Vyber fotku z kniznice"), message: Text(""), buttons:
-                        [.default(Text("Kniznica"), action: {
-                            self.source = .photoLibrary
-                            self.showPicker.toggle()
-                        }),
-                        .cancel(Text("Zavri"))
-                        ]
-                    )
-                }
+                actionSheet()
             }
             .sheet(isPresented: $showPicker){
                 // MARK: TODO: ImagePicker
@@ -98,12 +81,24 @@ struct PhotosView: View {
             
             ForEach(photos, id:\.self) { photo in
                 HStack{
-                    ImageView(photo: photo)
+                    ImageView(photo: photo).onTapGesture {
+                        // MARK: TODO: ZIP Extraction
+                        return 
+                        // allert if user wanna save copy of photo saved in last output
+                        if !photo.local {
+                            // else downlaod zip from cloud and get contetn of it to Document/Images/{proto.ID}
+                        }
+                        // if check if zip with internalID exist and get content of it to Document/Images/{proto.ID}
+                        if let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) {
+                            getZipPhotos(zipURL: zipURL)
+                        }
+                    }
                     Divider()
                     Text(String(photo.value))
                 }
             }.onDelete(perform: deletePhoto)
         }
+//        .alert(isPresented: <#T##Binding<Bool>#>, content: <#T##() -> Alert#>)
         .onDisappear{
             // MARK: Cloud save
             for photo in photos {
@@ -117,11 +112,53 @@ struct PhotosView: View {
         }
     }
     
+    private func actionSheet() -> ActionSheet {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            return ActionSheet(title: Text("Urob fotku alebo vyber z kniznice"), message: Text(""), buttons:
+                [.default(Text("Kniznica"), action: {
+                    self.source = .photoLibrary
+                    self.showPicker.toggle()
+                }),
+                 .default(Text("Kamera"), action: {
+                    self.source = .camera
+                    self.showPicker.toggle()
+                 }),
+                .cancel(Text("Zavri"))
+                ]
+            )
+        } else {
+            return ActionSheet(title: Text("Vyber fotku z kniznice"), message: Text(""), buttons:
+                [.default(Text("Kniznica"), action: {
+                    self.source = .photoLibrary
+                    self.showPicker.toggle()
+                }),
+                .cancel(Text("Zavri"))
+                ]
+            )
+        }
+    }
+    
+    private func getZipPhotos(zipURL: URL) {
+        guard let specificOutput = Dirs.shared.getSpecificOutputDir(protoID: protoID, internalID: internalID) else { return }
+        do {
+            try Zip.unzipFile(zipURL, destination: specificOutput, overwrite: true, password: nil)
+            insertExtractedPhotosToCoreData(from: specificOutput)
+        } catch {
+            printError(from: "getZipPhotos", message: error.localizedDescription)
+            return
+        }
+    }
+    
+    private func insertExtractedPhotosToCoreData(from: URL){
+        let _ = Dirs.shared.getConentsOfDir(at: from)
+        
+    }
+    
     private func deletePhoto(at offsets: IndexSet) {
         for index in offsets {
             let remove = photos[index]
             guard let recordID = remove.recordID else {
-                printError(from: "remove photo", message: "RecordID of photo \(remove.protoID) is nil")
+                print("Warning [remove photo]: RecordID of photo \(remove.protoID) is nil")
                 remove.deleteFromDisk()
                 photos.remove(at: index)
                 moc.delete(remove)
