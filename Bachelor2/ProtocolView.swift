@@ -106,7 +106,7 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
-            PhotoView(protoID: proto.id, photoIndex: lastPhotoNumber, photos: photos)
+            PhotoView(protoID: proto.id, internalID: proto.internalID, photoIndex: lastPhotoNumber, photos: photos)
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
@@ -116,9 +116,6 @@ struct ProtocolView: View {
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
-                                if !photos.isEmpty {
-                                    // MARK: TODO: Cloud save zip
-                                }
                             }
                             .disabled(proto.disabled())
                             .padding(8)
@@ -135,13 +132,6 @@ struct ProtocolView: View {
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 modify()
-                                if !photos.isEmpty{
-                                    if lastPhotoNumber >= 0 {
-                                        // MARK: TODO: Cloud modify zip
-                                    } else {
-                                        // MARK: TODO: Cloud save zip
-                                    }
-                                }
                             }
                             .disabled(proto.disabled())
                             .padding(8)
@@ -152,7 +142,7 @@ struct ProtocolView: View {
                             Spacer()
                             Button("Vytvor výstup") {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
-//                                createOutput(protoID: proto.id)
+                                createOutput(protoID: proto.id)
                             }
                             .padding(8)
                             .background(Color.blue)

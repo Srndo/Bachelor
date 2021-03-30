@@ -57,17 +57,19 @@ extension MyPhoto {
     }
     
     private func savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double) {
-        self.name = Int16(name)
-        self.protoID = Int16(protoID)
-        self.local = false
-        self.value = value
-        let imagePath = dir.appendingPathComponent("\(name).jpg")
-        do {
-            try data.write(to: imagePath)
-            self.local = true
-            print("Photo saved to disk")
-        } catch {
-            printError(from: "save photo", message: error.localizedDescription)
+        DispatchQueue.global().async {
+            self.name = Int16(name)
+            self.protoID = Int16(protoID)
+            self.local = false
+            self.value = value
+            let imagePath = dir.appendingPathComponent("\(name).jpg")
+            do {
+                try data.write(to: imagePath)
+                self.local = true
+                print("Photo saved to disk")
+            } catch {
+                printError(from: "save photo", message: error.localizedDescription)
+            }
         }
     }
 
