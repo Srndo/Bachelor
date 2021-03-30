@@ -82,7 +82,7 @@ class Dirs {
         }
     }
     
-    private func getSpecificOutputDir(protoID: Int, internalID: Int) -> URL? {
+    func getSpecificOutputDir(protoID: Int, internalID: Int) -> URL? {
         guard let outputURL = getProtocolOutputDir(protoID: protoID) else { return nil }
         let specific = outputURL.appendingPathComponent(String(internalID))
         guard createDir(at: specific.path) == true else { return nil }

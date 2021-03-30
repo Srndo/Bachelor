@@ -16,7 +16,7 @@ import CoreData.NSManagedObjectContext
 class Cloud {
     struct RecordType {
         static let protocols = "Protocols"
-        static let zip = "Outputs"
+        static let outputs = "Outputs"
         static let photos = "Photos"
     }
     
@@ -248,7 +248,7 @@ class Cloud {
      - Parameter completition: Return CKRecord if record was saved else nil
      */
     func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, pathTo zip: URL, completition: @escaping (CKRecord.ID?) -> ()){
-        guard recordType == RecordType.zip else {
+        guard recordType == RecordType.outputs else {
             printError(from: "save to cloud [zip]", message: "Record type is not correct")
             completition(nil)
             return
@@ -358,7 +358,7 @@ class Cloud {
                     saveProto(record: record)
                     continue
                     
-                case RecordType.zip:
+                case RecordType.outputs:
                     saveZip(record: record)
                     continue
                     
@@ -509,7 +509,6 @@ class Cloud {
                 let document = Document(protoID: Int(remove.protoID))
                 do {
                     try document.delete()
-                    // MARK: TODO remove all photos that contains remove.protoID
                     let removePhotos = allPhotos.filter{ $0.protoID == remove.protoID }
                     for photo in removePhotos {
                         photo.deleteFromDisk()

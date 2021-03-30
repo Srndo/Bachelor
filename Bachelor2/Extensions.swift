@@ -139,8 +139,7 @@ extension ProtocolView {
         
         // MARK: TODO: wait until document saved
         guard let zipURL = createPhotosZIP(protoID: protoID) else { return }
-        Cloud.shared.saveToCloud(recordType: Cloud.RecordType.zip, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ _ in}
-        // TODO: Cloud zip save
+        Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ _ in}
         createProtoPDF(protoID: protoID)
         return
     }
@@ -169,7 +168,9 @@ extension ProtocolView {
         }
 
         // MARK: TODO: Remove local copy of those photos
-//        self.photos
+//        for photo in self.photos {
+//            photo.deleteFromDisk()
+//        }
         print("ZIP with photos of protocol \(self.proto.id) was created")
         return zipURL
     }
@@ -204,7 +205,7 @@ extension ProtocolListView {
                     printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same")
                     return
                 }
-                removePhotos()
+                removePhotos(protoID: Int(remove.protoID))
                 removeDocument(protoID: Int(remove.protoID))
                 moc.delete(remove)
                 moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
@@ -226,9 +227,13 @@ extension ProtocolListView {
         }
     }
     
-    func removePhotos(){
-        // MARK: TODO
-        print("Warning: Not removing photos")
+    func removePhotos(protoID: Int){
+        // MARK: TODO test
+        let removes = self.photos.filter{ $0.protoID == protoID }
+        for remove in removes {
+            remove.deleteFromDisk()
+            moc.delete(remove)
+        }
     }
 }
 
