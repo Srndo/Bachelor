@@ -50,7 +50,9 @@ class Document: UIDocument {
     }
     
     func delete() throws {
-        try FileManager.default.removeItem(at: documentPath)
+        if FileManager.default.fileExists(atPath: documentPath.path){
+            try FileManager.default.removeItem(at: documentPath)
+        }
     }
     
     func modify(new proto: Proto) {
