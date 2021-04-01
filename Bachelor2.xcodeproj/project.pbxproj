@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -15,14 +15,22 @@
 		F41B777D26035BAA00EA507F /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F41B777C26035BAA00EA507F /* Preview Assets.xcassets */; };
 		F41B778A2603612D00EA507F /* Structs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41B77892603612C00EA507F /* Structs.swift */; };
 		F41B77902603716000EA507F /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41B778F2603716000EA507F /* Document.swift */; };
-		F41B779326038DE900EA507F /* Cloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41B779226038DE900EA507F /* Cloud.swift */; };
-		F4FD024C2605F3F300B21D85 /* DatabaseArchive+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD024A2605F3F300B21D85 /* DatabaseArchive+CoreDataClass.swift */; };
-		F4FD024D2605F3F300B21D85 /* DatabaseArchive+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD024B2605F3F300B21D85 /* DatabaseArchive+CoreDataProperties.swift */; };
 		F4FD02522605F6D700B21D85 /* ProtocolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02512605F6D700B21D85 /* ProtocolView.swift */; };
 		F4FD02552605F6E400B21D85 /* ProtocolListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02542605F6E400B21D85 /* ProtocolListView.swift */; };
 		F4FD025C2609EA1700B21D85 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD025B2609EA1700B21D85 /* Extensions.swift */; };
 		F4FD02602609FB8B00B21D85 /* DateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD025F2609FB8B00B21D85 /* DateView.swift */; };
 		F4FD0266260A088100B21D85 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FD0265260A088100B21D85 /* CloudKit.framework */; };
+		F4FD02C02615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02BD2615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift */; };
+		F4FD02CB2615D38000B21D85 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = F4FD02CA2615D38000B21D85 /* Zip */; };
+		F4FD02D12615D5AC00B21D85 /* CloudHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02D02615D5AC00B21D85 /* CloudHelper.swift */; };
+		F4FD02D72615D5C600B21D85 /* DatabaseArchive+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02D52615D5C600B21D85 /* DatabaseArchive+CoreDataClass.swift */; };
+		F4FD02D82615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02D62615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift */; };
+		F4FD02DC2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02DB2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift */; };
+		F4FD02DF2615D5F900B21D85 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */; };
+		F4FD02E22615D60D00B21D85 /* DirsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E12615D60D00B21D85 /* DirsHelper.swift */; };
+		F4FD02E52615D61900B21D85 /* PhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E42615D61900B21D85 /* PhotoView.swift */; };
+		F4FD02E92615D62C00B21D85 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E72615D62C00B21D85 /* ImagePicker.swift */; };
+		F4FD02EA2615D62C00B21D85 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E82615D62C00B21D85 /* ImageLoader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,15 +44,22 @@
 		F41B778126035BAA00EA507F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F41B77892603612C00EA507F /* Structs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Structs.swift; sourceTree = "<group>"; };
 		F41B778F2603716000EA507F /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
-		F41B779226038DE900EA507F /* Cloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cloud.swift; sourceTree = "<group>"; };
-		F4FD024A2605F3F300B21D85 /* DatabaseArchive+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DatabaseArchive+CoreDataClass.swift"; sourceTree = SOURCE_ROOT; };
-		F4FD024B2605F3F300B21D85 /* DatabaseArchive+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DatabaseArchive+CoreDataProperties.swift"; sourceTree = SOURCE_ROOT; };
 		F4FD02512605F6D700B21D85 /* ProtocolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolView.swift; sourceTree = "<group>"; };
 		F4FD02542605F6E400B21D85 /* ProtocolListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolListView.swift; sourceTree = "<group>"; };
 		F4FD025B2609EA1700B21D85 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		F4FD025F2609FB8B00B21D85 /* DateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateView.swift; sourceTree = "<group>"; };
 		F4FD0262260A087A00B21D85 /* Bachelor2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Bachelor2.entitlements; sourceTree = "<group>"; };
 		F4FD0265260A088100B21D85 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
+		F4FD02BD2615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MyPhoto+CoreDataProperties.swift"; sourceTree = SOURCE_ROOT; };
+		F4FD02D02615D5AC00B21D85 /* CloudHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CloudHelper.swift; sourceTree = "<group>"; };
+		F4FD02D52615D5C600B21D85 /* DatabaseArchive+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DatabaseArchive+CoreDataClass.swift"; sourceTree = "<group>"; };
+		F4FD02D62615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DatabaseArchive+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		F4FD02DB2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MyPhoto+CoreDataClass.swift"; sourceTree = SOURCE_ROOT; };
+		F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
+		F4FD02E12615D60D00B21D85 /* DirsHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirsHelper.swift; sourceTree = "<group>"; };
+		F4FD02E42615D61900B21D85 /* PhotoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoView.swift; sourceTree = "<group>"; };
+		F4FD02E72615D62C00B21D85 /* ImagePicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
+		F4FD02E82615D62C00B21D85 /* ImageLoader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +67,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4FD02CB2615D38000B21D85 /* Zip in Frameworks */,
 				F4FD0266260A088100B21D85 /* CloudKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,14 +96,18 @@
 			isa = PBXGroup;
 			children = (
 				F4FD0262260A087A00B21D85 /* Bachelor2.entitlements */,
-				F4FD024A2605F3F300B21D85 /* DatabaseArchive+CoreDataClass.swift */,
-				F4FD024B2605F3F300B21D85 /* DatabaseArchive+CoreDataProperties.swift */,
 				F41B777026035BA900EA507F /* AppDelegate.swift */,
 				F41B777226035BA900EA507F /* SceneDelegate.swift */,
-				F4FD025B2609EA1700B21D85 /* Extensions.swift */,
+				F4FD02BC2615D27B00B21D85 /* CoreData */,
 				F4FD02502605F6BE00B21D85 /* Structs */,
 				F4FD024F2605F6B300B21D85 /* Views */,
 				F41B778F2603716000EA507F /* Document.swift */,
+				F4FD02D02615D5AC00B21D85 /* CloudHelper.swift */,
+				F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */,
+				F4FD02E12615D60D00B21D85 /* DirsHelper.swift */,
+				F4FD02E82615D62C00B21D85 /* ImageLoader.swift */,
+				F4FD02E72615D62C00B21D85 /* ImagePicker.swift */,
+				F4FD025B2609EA1700B21D85 /* Extensions.swift */,
 				F41B777926035BAA00EA507F /* Assets.xcassets */,
 				F41B778126035BAA00EA507F /* Info.plist */,
 				F41B777626035BA900EA507F /* Bachelor2.xcdatamodeld */,
@@ -111,6 +131,7 @@
 				F4FD02512605F6D700B21D85 /* ProtocolView.swift */,
 				F4FD02542605F6E400B21D85 /* ProtocolListView.swift */,
 				F4FD025F2609FB8B00B21D85 /* DateView.swift */,
+				F4FD02E42615D61900B21D85 /* PhotoView.swift */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -118,7 +139,6 @@
 		F4FD02502605F6BE00B21D85 /* Structs */ = {
 			isa = PBXGroup;
 			children = (
-				F41B779226038DE900EA507F /* Cloud.swift */,
 				F41B77892603612C00EA507F /* Structs.swift */,
 			);
 			name = Structs;
@@ -130,6 +150,17 @@
 				F4FD0265260A088100B21D85 /* CloudKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F4FD02BC2615D27B00B21D85 /* CoreData */ = {
+			isa = PBXGroup;
+			children = (
+				F4FD02DB2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift */,
+				F4FD02BD2615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift */,
+				F4FD02D52615D5C600B21D85 /* DatabaseArchive+CoreDataClass.swift */,
+				F4FD02D62615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift */,
+			);
+			name = CoreData;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -148,6 +179,9 @@
 			dependencies = (
 			);
 			name = Bachelor2;
+			packageProductDependencies = (
+				F4FD02CA2615D38000B21D85 /* Zip */,
+			);
 			productName = Bachelor2;
 			productReference = F41B776D26035BA900EA507F /* Bachelor2.app */;
 			productType = "com.apple.product-type.application";
@@ -175,6 +209,9 @@
 				Base,
 			);
 			mainGroup = F41B776426035BA900EA507F;
+			packageReferences = (
+				F4FD02C92615D38000B21D85 /* XCRemoteSwiftPackageReference "Zip" */,
+			);
 			productRefGroup = F41B776E26035BA900EA507F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -201,19 +238,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4FD02E22615D60D00B21D85 /* DirsHelper.swift in Sources */,
 				F4FD02522605F6D700B21D85 /* ProtocolView.swift in Sources */,
+				F4FD02EA2615D62C00B21D85 /* ImageLoader.swift in Sources */,
 				F4FD02602609FB8B00B21D85 /* DateView.swift in Sources */,
+				F4FD02E52615D61900B21D85 /* PhotoView.swift in Sources */,
 				F41B777826035BA900EA507F /* Bachelor2.xcdatamodeld in Sources */,
-				F4FD024C2605F3F300B21D85 /* DatabaseArchive+CoreDataClass.swift in Sources */,
 				F41B777126035BA900EA507F /* AppDelegate.swift in Sources */,
+				F4FD02D82615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift in Sources */,
+				F4FD02E92615D62C00B21D85 /* ImagePicker.swift in Sources */,
+				F4FD02C02615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift in Sources */,
 				F4FD02552605F6E400B21D85 /* ProtocolListView.swift in Sources */,
 				F41B77902603716000EA507F /* Document.swift in Sources */,
-				F4FD024D2605F3F300B21D85 /* DatabaseArchive+CoreDataProperties.swift in Sources */,
+				F4FD02D12615D5AC00B21D85 /* CloudHelper.swift in Sources */,
 				F4FD025C2609EA1700B21D85 /* Extensions.swift in Sources */,
 				F41B777326035BA900EA507F /* SceneDelegate.swift in Sources */,
-				F41B779326038DE900EA507F /* Cloud.swift in Sources */,
+				F4FD02DC2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift in Sources */,
+				F4FD02DF2615D5F900B21D85 /* TextRecognizer.swift in Sources */,
 				F41B778A2603612D00EA507F /* Structs.swift in Sources */,
 				F41B777526035BA900EA507F /* ContentView.swift in Sources */,
+				F4FD02D72615D5C600B21D85 /* DatabaseArchive+CoreDataClass.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -402,6 +446,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F4FD02C92615D38000B21D85 /* XCRemoteSwiftPackageReference "Zip" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/marmelroy/Zip";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F4FD02CA2615D38000B21D85 /* Zip */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4FD02C92615D38000B21D85 /* XCRemoteSwiftPackageReference "Zip" */;
+			productName = Zip;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
 		F41B777626035BA900EA507F /* Bachelor2.xcdatamodeld */ = {

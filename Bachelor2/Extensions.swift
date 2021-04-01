@@ -9,6 +9,7 @@ import SwiftUI
 import CloudKit
 import CoreData.NSManagedObjectContext
 import Zip
+
 public func printError(from: String, message: String){
     print("ERROR [\(from)]: \(message)")
 }
