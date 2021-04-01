@@ -16,13 +16,24 @@ class Model: ObservableObject {
     var session: AVCaptureSession?
     
     func reset() {
-        guard let session = session else { return }
-        if !session.isRunning {
-            session.startRunning()
-        }
+        stop()
         color = .red
         text = "Hodnota"
         image = nil
+    }
+    
+    func takePhoto() {
+        stop()
+        text = ""
+        color = .green
+        // todo take photo
+    }
+    
+    private func stop(){
+        guard let session = session else { return }
+        if session.isRunning {
+            session.stopRunning()
+        }
     }
 }
 
@@ -32,18 +43,22 @@ struct CapturedView: View {
     @State var isShowingCameraView = false
     
     var body: some View {
-        ZStack {
-            CameraView(model: model)
-                .edgesIgnoringSafeArea(.all)
-                .hidden(model.image != nil)
-            VStack{
-                Spacer()
-                Image(uiImage: model.image ?? UIImage()).resizable().scaledToFit()
-                Spacer()
-                Text("\(model.text)").foregroundColor(model.color)
+        CameraView(model: model)
+            .edgesIgnoringSafeArea(.all)
+            .hidden(model.image != nil)
+        VStack{
+            Spacer()
+            Image(uiImage: model.image ?? UIImage()).resizable().scaledToFit()
+            Spacer()
+            Text("\(model.text)").foregroundColor(model.color)
+            if model.color == .red {
+                Button(action: {
+                    model.takePhoto()
+                }, label: {Image(systemName: "camera.circle.fill")})
+            } else {
                 Button("Uloz") { }
-            }.onTapGesture { model.reset() }
-        }
+            }
+        }.onTapGesture { model.reset() }
     }
 }
 
@@ -102,24 +117,36 @@ class NumberDetectorViewController : UIViewController, AVCaptureVideoDataOutputS
     var currentOrientation = UIDeviceOrientation.portrait
     // Orientation of text to search for in the region of interest.
     var textOrientation = CGImagePropertyOrientation.up
+    var cameraPreview: AVCaptureVideoPreviewLayer?
     
 //    var bufferAspectRatio: Double!
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        guard let model = model else { return }
+        model.session = AVCaptureSession()
+        guard let session = model.session else { return }
+        session.sessionPreset = AVCaptureSession.Preset.photo
+        
         startLiveVideo()
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
+        guard let cameraPreview = cameraPreview else { return }
+        let deviceOrientation = UIDevice.current.orientation
+        if let videoPreviewLayerConnection = cameraPreview.connection {
+            if let newVideoOrientation = AVCaptureVideoOrientation(rawValue: deviceOrientation.rawValue) {
+                videoPreviewLayerConnection.videoOrientation = newVideoOrientation
+            }
+        }
     }
     
     func startLiveVideo() {
         guard let model = model else { return }
-        model.session = AVCaptureSession()
         guard let session = model.session else { return }
-        session.sessionPreset = AVCaptureSession.Preset.photo
+        
         guard let captureDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: AVMediaType.video, position: .back) else {
             print("Could not create capture device.")
             return
@@ -150,10 +177,10 @@ class NumberDetectorViewController : UIViewController, AVCaptureVideoDataOutputS
             return
         }
 
-        let cameraPreview = AVCaptureVideoPreviewLayer(session: session)
-                        
-        view.layer.addSublayer(cameraPreview)
-        cameraPreview.frame = view.frame
+        cameraPreview = AVCaptureVideoPreviewLayer(session: session)
+        
+        view.layer.addSublayer(cameraPreview!)
+        cameraPreview!.frame = view.frame
 
         session.startRunning()
     }
