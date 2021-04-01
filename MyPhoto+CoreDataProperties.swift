@@ -42,14 +42,15 @@ extension MyPhoto {
     }
     
     func deleteFromDisk() {
-        guard local == true else { print("Photo \(name) is not local"); return }
         DispatchQueue.global().async {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(self.protoID)) else { return }
             let imagePath = dir.appendingPathComponent("\(self.name).jpg")
-            do {
-                try FileManager.default.removeItem(at: imagePath)
-            } catch {
-                printError(from: "delete photo", message: error.localizedDescription)
+            if FileManager.default.fileExists(atPath: imagePath.path) {
+                do {
+                    try FileManager.default.removeItem(at: imagePath)
+                } catch {
+                    printError(from: "delete photo", message: error.localizedDescription)
+                }
             }
             self.local = false
             print("Photo removed from disk")
