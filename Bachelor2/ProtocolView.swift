@@ -21,18 +21,13 @@ struct ProtocolView: View {
     @State var reqVal: String = ""
     @State var document: Document?
     @State var photos: [MyPhoto] = []
-    private var lastPhotoNumber: Int
+    @State var lastPhotoNumber: Int = 0
     
-    init(protoID: Int? = nil, lastPhotoNumber: Int16? = nil){
+    init(protoID: Int? = nil){
         if let protoID = protoID  {
             self.protoID = protoID
         } else {
             self.protoID = -1
-        }
-        if let idx = lastPhotoNumber {
-            self.lastPhotoNumber = Int(idx)
-        } else {
-            self.lastPhotoNumber = 0
         }
         
         _proto = State(initialValue: Proto(id: self.protoID))
@@ -106,7 +101,7 @@ struct ProtocolView: View {
 
             DateView(proto: $proto)
             
-            PhotoView(protoID: proto.id, internalID: proto.internalID, photoIndex: lastPhotoNumber, photos: photos)
+            PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber)
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
@@ -168,6 +163,8 @@ struct ProtocolView: View {
         .onAppear{
             // in start app was diff fetch on appear it chceck if fetch is still in progress if not
             // will insert every changes into database
+            print(allPhotos.count)
+            print(DAs.count)
             Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: DAs)
             if protoID == -1 {
                 proto.id = Int(DAs.last?.protoID ?? 0) + 1

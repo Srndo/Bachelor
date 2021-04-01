@@ -64,6 +64,8 @@ struct Proto: Codable {
     var device: Device = Device()
     var method: MyMethod = MyMethod()
     var material: Material = Material()
+    
+    var lastPhotoIndex: Int = 0
 }
 
 

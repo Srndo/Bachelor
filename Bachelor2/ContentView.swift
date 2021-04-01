@@ -33,6 +33,7 @@ struct ContentView: View {
             }
             .tag(1)
         }
+        // remove directories with output and images after delete protocol 
         // on first run show sheet and insert into sheet "objednavatela" (Nazov, adresa, ico, dic)
         // if user wanna change "objednavatela" let some button in toolbar
         // priemer terca, MyPhoto -> popis meraneho miesta
