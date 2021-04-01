@@ -111,15 +111,6 @@ class Cloud {
                 print(err)
             }
         }
-        
-//        db.delete(withSubscriptionID: "com.apple.coredata.cloudkit.private.subscription"){ string, err in
-//            if let string = string {
-//                print(string)
-//            }
-//            if let err = err {
-//                print(err)
-//            }
-//        }
     }
     
     /**
@@ -209,6 +200,7 @@ class Cloud {
         record["protoID"] = photo.protoID as CKRecordValue
         record["value"] = photo.value as CKRecordValue
         record["name"] = photo.name as CKRecordValue
+        record["local"] = photo.local as CKRecordValue
         
         guard let path = photo.getPhotoPath() else {
             printError(from: "save to cloud [photo]", message: "Photo path is nil")
@@ -308,6 +300,83 @@ class Cloud {
         }
     }
     
+    func downloadPhoto(photo: MyPhoto) {
+        guard let recordID = photo.recordID else { return }
+        db.fetch(withRecordID: recordID) { record, err in
+            if let err = err {
+                printError(from: "fetch photo from cloud", message: err.localizedDescription)
+                return
+            }
+            guard let record = record else { return }
+            
+            guard let protoID = record["protoID"] as? Int else {
+                printError(from: "cloud save photo", message: "ProtoID is nil")
+                return
+            }
+            
+            guard let value = record["value"] as? Double else {
+                printError(from: "cloud save photo", message: "Value of photo is nil")
+                return
+            }
+            
+            guard let name = record["name"] as? Int else {
+                printError(from: "cloud save photo", message: "Name of photo is nil")
+                return
+            }
+            
+            guard let asset = record["photo"] as? CKAsset else {
+                printError(from: "cloud save photo", message: "Asset is missing")
+                return
+            }
+            
+            guard let photoURL = asset.fileURL else {
+                printError(from: "cloud save photo", message: "Photo URL is nil")
+                return
+            }
+            
+            guard let data = try? Data(contentsOf: photoURL) else {
+                printError(from: "cloud save photo", message: "Cannot create data from asset")
+                return
+            }
+            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value)
+            photo.local = true
+            self.modifyOnCloud(photo: photo) // save local -> true [on cloud]
+        }
+    }
+    
+    /**
+     # Modify on cloud
+     Try to modify record in private database on cloud.
+     - Parameter photo: Instance of MyPhoto (NSManagedObject)
+     */
+    func modifyOnCloud(photo: MyPhoto) {
+        guard let recordID = photo.recordID else {
+            printError(from: "modify photo on cloud", message: "RecordID of photo \(photo.name) is nil")
+            return
+        }
+        db.fetch(withRecordID: recordID) { record, err in
+            if let err = err {
+                printError(from: "modify photo on cloud", message: err.localizedDescription)
+                return
+            }
+            guard let record = record else { return }
+            record["value"] = photo.value as CKRecordValue
+            record["name"] = photo.name as CKRecordValue
+            record["local"] = photo.local as CKRecordValue
+            
+            self.db.save(record) { record, err in
+                if let err = err {
+                    printError(from: "modify photo on cloud", message: err.localizedDescription)
+                    return
+                }
+                guard let _ = record else { return }
+                print("Photo modified on cloud")
+                return
+            }
+            
+        }
+    }
+    
     /**
      # Modify on cloud
      Try to modify record in private database on cloud.
@@ -391,27 +460,37 @@ class Cloud {
             return
         }
         
-        guard let asset = record["photo"] as? CKAsset else {
-            printError(from: "cloud save photo", message: "Asset is missing")
-            return
-        }
-        
-        guard let photoURL = asset.fileURL else {
-            printError(from: "cloud save photo", message: "Photo URL is nil")
-            return
-        }
-        
-        guard let data = try? Data(contentsOf: photoURL) else {
-            printError(from: "cloud save photo", message: "Cannot create data from asset")
+        guard let local = record["local"] as? Bool else {
+            printError(from: "cloud save photo", message: "Local of photo is nil")
             return
         }
         
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
         photo.recordID = recordID
-        photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value)
         
+        if local {
+            guard let asset = record["photo"] as? CKAsset else {
+                printError(from: "cloud save photo", message: "Asset is missing")
+                return
+            }
+            
+            guard let photoURL = asset.fileURL else {
+                printError(from: "cloud save photo", message: "Photo URL is nil")
+                return
+            }
+            
+            guard let data = try? Data(contentsOf: photoURL) else {
+                printError(from: "cloud save photo", message: "Cannot create data from asset")
+                return
+            }
+            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value)
+        } else {
+            photo.name = Int16(name)
+            photo.protoID = Int16(protoID)
+            photo.value = value
+            photo.local = false
+        }
         photos.append(photo)
-        
     }
     
     /**
@@ -517,12 +596,16 @@ class Cloud {
                     moc.delete(remove)
                 } catch {
                     printError(from: "delete record [protocol]", message: error.localizedDescription)
+                    print(error)
                     continue
                 }
             } else if recordType == RecordType.photos {
                 guard let remove = allPhotos.first(where: { $0.recordID == recordID }) else { continue }
                 remove.deleteFromDisk()
                 moc.delete(remove)
+            } else if recordType == RecordType.outputs {
+                //MARK: TODO remove ZIPs
+                print("TODO: Remove ZIPs")
             } else {
                 printError(from: "delete record", message: "This record type \(recordType) is untreated")
             }
@@ -539,6 +622,10 @@ class Cloud {
     private func insertIntoMocPhotos(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>) {
         for photo in photos {
             if let update = allPhotos.first(where: { $0.protoID == photo.protoID && $0.name == photo.name }) {
+                // if local copy exist and on other device was local copy deleted
+                if update.local == true && photo.local == false {
+                    photo.deleteFromDisk()
+                }
                 update.local = photo.local
                 update.value = photo.value
                 update.recordID = photo.recordID
