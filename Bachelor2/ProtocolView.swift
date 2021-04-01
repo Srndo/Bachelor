@@ -107,7 +107,12 @@ struct ProtocolView: View {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
                         HStack {
                             Spacer()
-                            Button("Vytvor"){
+                            Button("Vytvor testing"){
+                                // for new proto create newID
+                                if proto.id == -1 {
+                                    proto.id = Int(DAs.last?.protoID ?? 0) + 1
+                                }
+                                fillForTest(number: proto.id)
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
@@ -163,17 +168,33 @@ struct ProtocolView: View {
         .onAppear{
             // in start app was diff fetch on appear it chceck if fetch is still in progress if not
             // will insert every changes into database
-            print(allPhotos.count)
-            print(DAs.count)
-            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: DAs)
             if protoID == -1 {
                 proto.id = Int(DAs.last?.protoID ?? 0) + 1
+            } else {
+                photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
-            photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             openDocument()
         }
         .onDisappear{
             closeDocument()
         }
+    }
+    
+    private func fillForTest(number: Int) {
+        proto.client.name = String(number)
+        proto.client.address = String(number)
+        proto.client.ico = number
+        proto.client.dic = number
+        proto.construction.address = String(number)
+        proto.construction.name = String(number)
+        proto.construction.section = String(number)
+        proto.creationDate = Date()
+        proto.device.manufacturer = String(number)
+        proto.device.name = String(number)
+        proto.device.serialNumber = String(number)
+        proto.material.material = String(number)
+        proto.method.about = String(number)
+        proto.method.name = String(number)
+        proto.method.requestedValue = Double(number)
     }
 }
