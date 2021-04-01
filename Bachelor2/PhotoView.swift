@@ -13,14 +13,15 @@ struct PhotoView: View {
     
     @State private var show: Bool = false
     @State private var photos: [MyPhoto]
+    var lastPhotoIndex: Binding<Int>
     private var protoID: Int
     private var internalID: Int
-    private var lastPhotoIndex: Int
     
-    init(protoID: Int, internalID: Int, photoIndex: Int, photos: [MyPhoto]){
+    
+    init(protoID: Int, internalID: Int, photos: [MyPhoto], lastPhotoIndex: Binding<Int>){
         self.protoID = protoID
-        self.lastPhotoIndex = photoIndex
         self.internalID = internalID
+        self.lastPhotoIndex = lastPhotoIndex
         _photos = State(initialValue: photos)
     }
     
@@ -48,57 +49,86 @@ struct PhotosView: View {
     @Environment(\.managedObjectContext) var moc
     
     @State private var actionShow: Bool = false
-    @State private var showPicker: Bool = false
-    @State private var source: UIImagePickerController.SourceType = .photoLibrary
+    @State var showPicker: Bool = false
+    @State var source: UIImagePickerController.SourceType = .photoLibrary
+    
     @Binding var photos: [MyPhoto]
-    @State var lastPhotoIndex: Int
+    // MARK: TODO: test lastPhotoIndex and for cloud too
+    @Binding var lastPhotoIndex: Int
     @State var protoID: Int
     @State var internalID: Int
     @State private var showAllert: Bool = false
+    @State private var edit: Bool = false
+    @State private var newValue: String = "-1.0"
+    @State private var editingPhoto: MyPhoto?
+    @State private var placeholder: String = "Zadajte hodnotu"
     
     var body: some View {
         Form{
-            HStack {
-                Spacer()
-                Button(action: {
-                    self.actionShow.toggle()
-                }){
-                    Text("Pridaj fotku")
-                }.padding(8)
-                .foregroundColor(.white)
-                .background(Color.blue)
-                .cornerRadius(10)
-                Spacer()
-            }
-            .actionSheet(isPresented: $actionShow){
-                actionSheet()
-            }
-            .sheet(isPresented: $showPicker){
-                // MARK: TODO: ImagePicker
-                // find the value in photo
-                ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
+            Section{
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        self.actionShow.toggle()
+                    }){
+                        Text("Pridaj fotku")
+                    }.padding(8)
+                    .foregroundColor(.white)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+                    Spacer()
+                }
+                .actionSheet(isPresented: $actionShow){
+                    actionSheet()
+                }
+                .sheet(isPresented: $showPicker){
+                    ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
+                }
             }
             
-            ForEach(photos, id:\.self) { photo in
-                HStack{
-                    ImageView(photo: photo).onTapGesture {
-                        // MARK: TODO: ZIP Extraction
-                        return 
-                        // allert if user wanna save copy of photo saved in last output
-                        if !photo.local {
-                            // else downlaod zip from cloud and get contetn of it to Document/Images/{proto.ID}
+            Section(header: VStack{Text("Pre zmenu hodnoty podrž prst na hodnote.");Text("Pre stiahnutie nenačítanej fotky podrdž prst na fotke.")}){
+                ForEach(photos, id:\.self) { photo in
+                    HStack{
+                        ImageView(photo: photo).onLongPressGesture {
+                            if !photo.local {
+                                Cloud.shared.downloadPhoto(photo: photo)
+                                // MARK: TODO: reload
+                            }
                         }
-                        // if check if zip with internalID exist and get content of it to Document/Images/{proto.ID}
-                        if let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) {
-                            getZipPhotos(zipURL: zipURL)
+                        Divider()
+                        Text(String(photo.value)).onLongPressGesture {
+                            self.edit.toggle()
+                            newValue = String(photo.value)
+                            editingPhoto = photo
                         }
                     }
-                    Divider()
-                    Text(String(photo.value))
-                }
-            }.onDelete(perform: deletePhoto)
+                }.onDelete(perform: deletePhoto)
+            }
         }
-//        .alert(isPresented: <#T##Binding<Bool>#>, content: <#T##() -> Alert#>)
+        .sheet(isPresented: $edit) {
+            Form{
+                Section{
+                    HStack{
+                        TextField(placeholder, text: $newValue)
+                            .onChange(of: newValue, perform: { _ in
+                                guard let value = Double(newValue) else { return }
+                                if value < 0.0 {
+                                    placeholder = "Prosim zadajte znova"
+                                    newValue = ""
+                                }
+                            })
+                        Button("Ulož"){
+                            guard let photo = editingPhoto else { return }
+                            guard let value = Double(newValue) else { return }
+                            photo.value = value
+                            moc.trySave(errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
+                            Cloud.shared.modifyOnCloud(photo: photo)
+                            edit.toggle()
+                        }.disabled(editingPhoto == nil)
+                    }
+                }
+            }
+        }
         .onDisappear{
             // MARK: Cloud save
             for photo in photos {
@@ -109,77 +139,6 @@ struct PhotosView: View {
                 }
             }
             moc.trySave(errorFrom: "photoView", error: "Cannot saved photos")
-        }
-    }
-    
-    private func actionSheet() -> ActionSheet {
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            return ActionSheet(title: Text("Urob fotku alebo vyber z kniznice"), message: Text(""), buttons:
-                [.default(Text("Kniznica"), action: {
-                    self.source = .photoLibrary
-                    self.showPicker.toggle()
-                }),
-                 .default(Text("Kamera"), action: {
-                    self.source = .camera
-                    self.showPicker.toggle()
-                 }),
-                .cancel(Text("Zavri"))
-                ]
-            )
-        } else {
-            return ActionSheet(title: Text("Vyber fotku z kniznice"), message: Text(""), buttons:
-                [.default(Text("Kniznica"), action: {
-                    self.source = .photoLibrary
-                    self.showPicker.toggle()
-                }),
-                .cancel(Text("Zavri"))
-                ]
-            )
-        }
-    }
-    
-    private func getZipPhotos(zipURL: URL) {
-        guard let specificOutput = Dirs.shared.getSpecificOutputDir(protoID: protoID, internalID: internalID) else { return }
-        do {
-            try Zip.unzipFile(zipURL, destination: specificOutput, overwrite: true, password: nil)
-            insertExtractedPhotosToCoreData(from: specificOutput)
-        } catch {
-            printError(from: "getZipPhotos", message: error.localizedDescription)
-            return
-        }
-    }
-    
-    private func insertExtractedPhotosToCoreData(from: URL){
-        let _ = Dirs.shared.getConentsOfDir(at: from)
-        
-    }
-    
-    private func deletePhoto(at offsets: IndexSet) {
-        for index in offsets {
-            let remove = photos[index]
-            guard let recordID = remove.recordID else {
-                print("Warning [remove photo]: RecordID of photo \(remove.protoID) is nil")
-                remove.deleteFromDisk()
-                photos.remove(at: index)
-                moc.delete(remove)
-                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
-                return
-            }
-            Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
-                guard let recordID = recordID else { return }
-                guard let removeCloud = photos.first(where: { $0.recordID == recordID }) else {
-                    printError(from: "remove photo cloud", message: "RecordID returned from cloud not exist in photos contained by proto")
-                    return
-                }
-                guard removeCloud == remove else {
-                    printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same")
-                    return
-                }
-                remove.deleteFromDisk()
-                photos.remove(at: index)
-                moc.delete(remove)
-                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
-            }
         }
     }
 }
