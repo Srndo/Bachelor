@@ -649,7 +649,7 @@ class Cloud {
             if let update = allDAs.first(where: { $0.protoID == da.protoID }) {
                 guard let proto = update.fillWithData(encodedProto: da.encodedProto, local: false, recordID: da.recordID) else { continue }
                 let document = Document(protoID: proto.id)
-                document.modify(new: proto)
+                document.modify(new: proto, afterSave: {})
                 
             }
             else if da.managedObjectContext == nil {

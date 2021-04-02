@@ -57,7 +57,6 @@ extension ProtocolView {
     func createNew() {
         self.document = Document(protoID: proto.id, proto: proto)
         guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
-        
         // crate new document including protocol
         document.createNew{
             // after succesfull creation of document
@@ -85,12 +84,14 @@ extension ProtocolView {
         }
     }
     
-    func modify() {
+    func modify(afterModified: @escaping (() -> ())) {
+        guard protoID != -1 else { return }
         guard let document = document else { printError(from: "modify", message: "Document is nil"); return }
+        guard document.proto != proto else { afterModified(); return }
         guard let DA = DAs.first(where: { $0.protoID == Int16(proto.id) }) else { printError(from: "modify", message: "Protocol for modifying is not in database"); return }
         guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
         let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
-        document.modify(new: proto)
+        document.modify(new: proto, afterSave: afterModified)
         
         Cloud.shared.modifyOnCloud(recordID: recordID, proto: proto)
         
@@ -112,7 +113,9 @@ extension ProtocolView {
                     self.ico = String(proto.client.ico)
                     self.dic = String(proto.client.dic)
                     self.reqVal = String(proto.method.requestedValue)
-                    self.lastPhotoNumber = proto.lastPhotoIndex
+                    if lastPhotoNumber < proto.lastPhotoIndex {
+                        self.lastPhotoNumber = proto.lastPhotoIndex
+                    }
                     self.internalID = proto.internalID
                 }
             } else {
@@ -138,13 +141,14 @@ extension ProtocolView {
         self.proto.internalID = proto.internalID + 1
         self.internalID = proto.internalID
         
-        // MARK: TODO: wait until document saved
+        // MARK: TODO: wait until document saved ? done ? 
         // add closure and into this closure createProtoPDF, and Cloud.shared.saveToCloud(pdf) <--- [cloud pretaz fce, same params except last]
-        modify() // save incremented proto.id
-        
-        guard let zipURL = createPhotosZIP(protoID: protoID) else { return }
-        Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ _ in}
-        createProtoPDF(protoID: protoID)
+        // save incremented proto.id
+        modify(afterModified: {
+            guard let zipURL = createPhotosZIP(protoID: protoID) else { return }
+            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ _ in}
+            createProtoPDF(protoID: protoID)
+        })
         return
     }
     

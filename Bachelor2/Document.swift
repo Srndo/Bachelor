@@ -55,12 +55,13 @@ class Document: UIDocument {
         }
     }
     
-    func modify(new proto: Proto) {
+    func modify(new proto: Proto, afterSave: @escaping () -> ()) {
         self.proto = proto
         self.updateChangeCount(.done)
         self.save(to: documentPath, for: .forOverwriting) { res in
             if res {
                 print("Document with protocol \(proto.id) overwrited")
+                afterSave()
             } else {
                 printError(from: "document overwrite", message: "Document with protocol \(proto.id) did not overwrited")
             }

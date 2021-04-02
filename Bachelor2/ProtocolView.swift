@@ -117,7 +117,7 @@ struct ProtocolView: View {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
                             }
-                            .disabled(proto.disabled())
+//                            .disabled(proto.disabled())
                             .padding(8)
                             .background(proto.disabled() ? Color.gray : Color.blue)
                             .foregroundColor(.white)
@@ -128,18 +128,6 @@ struct ProtocolView: View {
                 } else {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
                         HStack{
-                            Button("Uprav"){
-                                // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
-                                proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
-                                modify()
-                            }
-                            .disabled(proto.disabled())
-                            .padding(8)
-                            .background(proto.disabled() ? Color.gray : Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                            .buttonStyle(BorderlessButtonStyle())
-                            Spacer()
                             Button("Vytvor výstup") {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createOutput(protoID: proto.id)
@@ -176,7 +164,7 @@ struct ProtocolView: View {
             openDocument()
         }
         .onDisappear{
-            closeDocument()
+            modify(afterModified: closeDocument)
         }
     }
     
