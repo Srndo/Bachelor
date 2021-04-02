@@ -20,12 +20,18 @@ extension OutputArchive {
     @NSManaged public var zip: Bool
     @NSManaged public var pdf: Bool
     @NSManaged public var protoID: Int16
+    @NSManaged public var internalID: Int16
     
-    func fill(recordID: CKRecord.ID? = nil, protoID: Int, zipExist: Bool, pdfExist: Bool){
+    func fill(recordID: CKRecord.ID? = nil, protoID: Int, internalID: Int, zipExist: Bool, pdfExist: Bool){
         self.recordID = recordID
         self.protoID = Int16(protoID)
+        self.internalID = Int16(internalID)
         self.zip = zipExist
         self.pdf = pdfExist
+    }
+    
+    func deleteFromDisk() -> Bool {
+        return Dirs.shared.remove(at: Dirs.shared.getSpecificOutputDir(protoID: Int(protoID), internalID: Int(internalID)))
     }
 }
 
