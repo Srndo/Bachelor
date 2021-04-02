@@ -11,10 +11,12 @@ struct DateView: View {
     @State private var show: Bool = false
     @State var color: Color = .red
     @State var date: Date = Date()
+    private var locked: Binding<Bool>
     private var proto: Binding<Proto>
     
-    init(proto: Binding<Proto>){
+    init(proto: Binding<Proto>, locked: Binding<Bool>){
         self.proto = proto
+        self.locked = locked
     }
     
     var body: some View {
@@ -31,16 +33,20 @@ struct DateView: View {
             DatePicker("Dátum vytvorenia protokolu", selection: $date)
                 .datePickerStyle(GraphicalDatePickerStyle())
             Button(action: {
-                proto.wrappedValue.creationDate = date
-                if proto.wrappedValue.creationDate != nil {
-                    color = .green
+                if locked.wrappedValue == false {
+                    proto.wrappedValue.creationDate = date
+                    if proto.wrappedValue.creationDate != nil {
+                        color = .green
+                    }
+                } else if proto.wrappedValue.creationDate != nil {
+                    date = proto.wrappedValue.creationDate!
                 }
                 self.show.toggle()
             }){
                 Text("OK").bold()
             }
                 .padding(8)
-                .background(Color.blue)
+            .background(locked.wrappedValue ? Color.gray : Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
         }

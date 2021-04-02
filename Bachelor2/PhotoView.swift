@@ -12,21 +12,23 @@ struct PhotoView: View {
     
     @State private var show: Bool = false
     @State private var photos: [MyPhoto]
+    private var locked: Binding<Bool>
     var lastPhotoIndex: Binding<Int>
     private var protoID: Int
     private var internalID: Int
     
     
-    init(protoID: Int, internalID: Int, photos: [MyPhoto], lastPhotoIndex: Binding<Int>){
+    init(protoID: Int, internalID: Int, photos: [MyPhoto], lastPhotoIndex: Binding<Int>, locked: Binding<Bool>){
         self.protoID = protoID
         self.internalID = internalID
         self.lastPhotoIndex = lastPhotoIndex
         _photos = State(initialValue: photos)
+        self.locked = locked
     }
     
     var body: some View {
         ZStack{
-            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID, internalID: internalID)
+            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID, internalID: internalID, locked: locked)
                             .environment(\.managedObjectContext , moc)){
                 EmptyView()
             }
@@ -61,6 +63,7 @@ struct PhotosView: View {
     @State private var newValue: String = "-1.0"
     @State private var editingPhoto: MyPhoto?
     @State private var placeholder: String = "Zadajte hodnotu"
+    @Binding var locked: Bool
     
     var body: some View {
         Form{
@@ -72,8 +75,9 @@ struct PhotosView: View {
                     }){
                         Text("Pridaj fotku")
                     }.padding(8)
+                    .disabled(locked)
                     .foregroundColor(.white)
-                    .background(Color.blue)
+                    .background(locked ? Color.gray : Color.blue)
                     .cornerRadius(10)
                     Spacer()
                 }
@@ -96,6 +100,7 @@ struct PhotosView: View {
 //                            }
                         Divider()
                         Text(String(photo.value)).onLongPressGesture {
+                            guard locked != true else { return }
                             self.edit.toggle()
                             newValue = String(photo.value)
                             editingPhoto = photo
@@ -120,7 +125,7 @@ struct PhotosView: View {
                             guard let photo = editingPhoto else { return }
                             guard let value = Double(newValue) else { return }
                             photo.value = value
-                            moc.trySave(errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
+                            moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
                             Cloud.shared.modifyOnCloud(photo: photo)
                             edit.toggle()
                         }.disabled(editingPhoto == nil)
@@ -137,7 +142,7 @@ struct PhotosView: View {
                     photo.recordID = recordID
                 }
             }
-            moc.trySave(errorFrom: "photoView", error: "Cannot saved photos")
+            moc.trySave(savingFrom: "photo disappear", errorFrom: "photoView", error: "Cannot saved photos")
         }
     }
 }

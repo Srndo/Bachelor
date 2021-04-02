@@ -29,7 +29,7 @@ struct ProtocolListView: View {
                 }
             }.onDelete(perform: remove)
         }.onAppear{
-            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: photos, allDAs: DAs)
+            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: photos, allDAs: DAs, allOutputs: outputs)
         }
     }
 }

@@ -9,9 +9,9 @@ import SwiftUI
 
 struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
-    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
+    @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var allDA: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var allPhotos: FetchedResults<MyPhoto>
-    @FetchRequest(entity: OutputArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \OutputArchive.protoID , ascending: true)]) var outputs: FetchedResults<OutputArchive>
+    @FetchRequest(entity: OutputArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \OutputArchive.protoID , ascending: true)]) var allOutputs: FetchedResults<OutputArchive>
     
     @State var internalID: Int = -1
     let protoID: Int
@@ -23,6 +23,8 @@ struct ProtocolView: View {
     @State var document: Document?
     @State var photos: [MyPhoto] = []
     @State var lastPhotoNumber: Int = 0
+    @State var locked: Bool = false
+    @State private var creatingOutput: Bool = false
     
     init(protoID: Int? = nil){
         if let protoID = protoID  {
@@ -53,6 +55,7 @@ struct ProtocolView: View {
                     }
                 }
             }.foregroundColor(proto.client.filled() ? .green : .red)
+            .disabled(locked)
             
             DropDown(header: "Stavba"){
                 Group{
@@ -61,6 +64,7 @@ struct ProtocolView: View {
                     TextField("Sekcia", text: $proto.construction.section)
                 }
             }.foregroundColor(proto.construction.filled() ? .green : .red)
+            .disabled(locked)
             
             DropDown(header: "Zariadenie"){
                 Group{
@@ -69,6 +73,7 @@ struct ProtocolView: View {
                     TextField("*Výrobné číslo", text: $proto.device.serialNumber)
                 }
             }.foregroundColor(proto.device.filled() ? .green : .red)
+            .disabled(locked)
             
             DropDown(header: "Metóda"){
                 Group{
@@ -92,6 +97,7 @@ struct ProtocolView: View {
                         }
                 }
             }.foregroundColor(proto.method.filled() ? .green : .red)
+            .disabled(locked)
             
             DropDown(header: "Materiál"){
                 Group{
@@ -99,10 +105,11 @@ struct ProtocolView: View {
                     TextField("Podklad pod", text: $proto.material.base)
                 }
             }.foregroundColor(proto.material.filled() ? .green : .red)
+            .disabled(locked)
 
-            DateView(proto: $proto)
+            DateView(proto: $proto, locked: $locked)
             
-            PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber)
+            PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked)
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
@@ -111,7 +118,7 @@ struct ProtocolView: View {
                             Button("Vytvor testing"){
                                 // for new proto create newID
                                 if proto.id == -1 {
-                                    proto.id = Int(DAs.last?.protoID ?? 0) + 1
+                                    proto.id = Int(allDA.last?.protoID ?? 0) + 1
                                 }
                                 fillForTest(number: proto.id)
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
@@ -131,18 +138,32 @@ struct ProtocolView: View {
                         HStack{
                             Button("Vytvor výstup") {
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
-                                createOutput(protoID: proto.id)
+                                createOutput(creatingOutput: $creatingOutput)
                             }
                             .padding(8)
-                            .background(Color.blue)
+                            .background(creatingOutput || locked ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .buttonStyle(BorderlessButtonStyle())
+                            .disabled(creatingOutput || locked)
+                            Spacer()
+                            Button("Uzavrieť protokol") {
+                                // MARK: TODO: WHEN locked stay locked
+                                locked.toggle()
+                                proto.locked = locked
+                                print(proto.locked)
+                            }
+                            .padding(8)
+                            .background(locked ? Color.gray : Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .buttonStyle(BorderlessButtonStyle())
+//                            .disabled(locked)
                         }
                     }
                     
                     Section(header: Text("Verzie")) {
-//                        showVersions(protoID: protoID)
+                        VersionsView(protoID: protoID, versions: allOutputs.filter({ $0.protoID == protoID }))
                     }
                 }
         }
@@ -157,8 +178,11 @@ struct ProtocolView: View {
         .onAppear{
             // in start app was diff fetch on appear it chceck if fetch is still in progress if not
             // will insert every changes into database
+            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: allDA, allOutputs: allOutputs)
+//            printDB()
+//            clearDB()
             if protoID == -1 {
-                proto.id = Int(DAs.last?.protoID ?? 0) + 1
+                proto.id = Int(allDA.last?.protoID ?? 0) + 1
             } else {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
@@ -170,6 +194,24 @@ struct ProtocolView: View {
         }
     }
     
+    private func printDB() {
+        print(allPhotos.count)
+        print(allDA.count)
+        print(allOutputs.count)
+    }
+    
+    private func clearDB() {
+        for photo in allPhotos {
+            moc.delete(photo)
+        }
+        for da in allDA {
+            moc.delete(da)
+        }
+        for out in allOutputs {
+            moc.delete(out)
+        }
+        moc.trySave(savingFrom: "clearDB", errorFrom: "clearDB", error: "oOoOoPs")
+    }
     private func fillForTest(number: Int) {
         proto.client.name = String(number)
         proto.client.address = String(number)
