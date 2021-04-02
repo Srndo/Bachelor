@@ -90,7 +90,7 @@ extension ProtocolView {
         guard protoID != -1 else { return }
         guard let document = document else { printError(from: "modify", message: "Document is nil"); return }
         guard document.proto != proto else { afterModified(); return } // if proto is not changed afterModified contains closeDocument
-        guard let DA = DAs.first(where: { $0.protoID == Int16(proto.id) }) else { printError(from: "modify", message: "Protocol for modifying is not in database"); return }
+        guard let DA = allDA.first(where: { $0.protoID == Int16(proto.id) }) else { printError(from: "modify", message: "Protocol for modifying is not in database"); return }
         guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
         let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
         document.modify(new: proto, afterSave: afterModified)
@@ -119,6 +119,7 @@ extension ProtocolView {
                         self.lastPhotoNumber = proto.lastPhotoIndex
                     }
                     self.internalID = proto.internalID
+                    self.locked = proto.locked
                 }
             } else {
                 printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
@@ -139,22 +140,24 @@ extension ProtocolView {
         }
     }
     
-    func createOutput(protoID: Int) {
+    func createOutput(creatingOutput: Binding<Bool>) {
         // increment internalID because we creating new output
         self.proto.internalID = proto.internalID + 1
         // show this incrementedID in view
         self.internalID = proto.internalID
         
         // save incremented proto.id
+        creatingOutput.wrappedValue = true
         modify(afterModified: {
-            guard let zipURL = createPhotosZIP(protoID: protoID) else { return }
+            guard let zipURL = createPhotosZIP(protoID: proto.id) else { return }
 //            guard let pdfURL = createProtoPDF(protoID: protoID) else { return }
             // save outputs on cloud
-            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, pathTo: zipURL){ recordID in
+            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, zipURL: zipURL){ recordID in
                 // if cloud save successfull create output archive
                 let outArch = OutputArchive(context: self.moc)
-                outArch.fill(recordID: recordID, protoID: protoID, zipExist: true, pdfExist: true)
-                moc.trySave(errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
+                outArch.fill(recordID: recordID, protoID: proto.id, internalID: proto.internalID, zipExist: true, pdfExist: false) //MARK: TODO false
+                moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
+                creatingOutput.wrappedValue = false
             }
         })
         return
@@ -191,7 +194,7 @@ extension ProtocolView {
 //            photo.local = false
 //            Cloud.shared.modifyOnCloud(photo: photo)
 //        }
-        moc.trySave(errorFrom: "create ZIP from photos", error: "Cannot saved remove changes [photo.local -> false]")
+        moc.trySave(savingFrom: "createPhotosZip", errorFrom: "create ZIP from photos", error: "Cannot saved remove changes [photo.local -> false]")
         print("ZIP with photos of protocol \(self.proto.id) was created.")
         return zipURL
     }
@@ -230,7 +233,7 @@ extension ProtocolListView {
                 removeOutputs(protoID: remove.protoID)
                 _ = Dirs.shared.remove(at: Dirs.shared.getSpecificPhotoDir(protoID: Int(remove.protoID)))
                 moc.delete(remove)
-                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
+                moc.trySave(savingFrom: "protoListRemove", errorFrom: "remove cloud", error: "Cannot saved managed object context")
             }
         }
     }
@@ -240,12 +243,13 @@ extension ProtocolListView {
         for output in outputs {
             if let recordID = output.recordID {
                 Cloud.shared.deleteFromCloud(recordID: recordID){ _ in
-                    _ = Dirs.shared.remove(at: Dirs.shared.getProtocolOutputDir(protoID: Int(protoID)))
+                    _ = output.deleteFromDisk()
                 }
             } else {
-                _ = Dirs.shared.remove(at: Dirs.shared.getProtocolOutputDir(protoID: Int(protoID)))
+                _ = output.deleteFromDisk()
             }
         }
+        _ = Dirs.shared.remove(at: Dirs.shared.getProtocolOutputDir(protoID: Int(protoID)))
 
     }
     
@@ -297,7 +301,8 @@ extension UserDefaults {
 }
 
 extension NSManagedObjectContext {
-    public func trySave(errorFrom: String, error message: String){
+    public func trySave(savingFrom: String, errorFrom: String, error message: String){
+        print("Saving from: \(savingFrom)\n")
         do {
             try self.save()
         } catch {
@@ -364,10 +369,11 @@ extension PhotosView {
                 photo.local = true
             }
         }
-        moc.trySave(errorFrom: "create photos from ZIP", error: "Cannot saved creating changes [photo.local -> true]")
+        moc.trySave(savingFrom: "insertExtractedPhotsToCoreData", errorFrom: "create photos from ZIP", error: "Cannot saved creating changes [photo.local -> true]")
     }
     
     func deletePhoto(at offsets: IndexSet) {
+        guard locked != true else { return }
         for index in offsets {
             let remove = photos[index]
             guard let recordID = remove.recordID else {
@@ -375,7 +381,7 @@ extension PhotosView {
                 remove.deleteFromDisk()
                 photos.remove(at: index)
                 moc.delete(remove)
-                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
+                moc.trySave(savingFrom: "deletePhoto", errorFrom: "remove cloud", error: "Cannot saved managed object context")
                 return
             }
             Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
@@ -391,7 +397,7 @@ extension PhotosView {
                 remove.deleteFromDisk()
                 photos.remove(at: index)
                 moc.delete(remove)
-                moc.trySave(errorFrom: "remove cloud", error: "Cannot saved managed object context")
+                moc.trySave(savingFrom: "deleteFromCloud", errorFrom: "remove cloud", error: "Cannot saved managed object context")
             }
         }
     }
