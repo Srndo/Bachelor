@@ -118,6 +118,11 @@ class Dirs {
         return specific.appendingPathComponent("photos.zip")
     }
     
+    func getPdfURL(protoID: Int, internalID: Int) -> URL? {
+        guard let specific = getSpecificOutputDir(protoID: protoID, internalID: internalID) else { return nil }
+        return specific.appendingPathComponent("protocol.pdf")
+    }
+    
     func remove(at: URL?) -> Bool {
         guard let path = at else { return true }
         do {
