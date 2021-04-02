@@ -210,7 +210,7 @@ extension ProtocolView {
     }
 }
 
-extension ProtocolListView {
+extension Filtred {
     func remove(at offSets: IndexSet) {
         for index in offSets {
             let remove = DAs[index]
@@ -317,8 +317,8 @@ extension NSManagedObjectContext {
 extension PhotosView {
     func actionSheet() -> ActionSheet {
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            return ActionSheet(title: Text("Urob fotku alebo vyber z kniznice"), message: Text(""), buttons:
-                [.default(Text("Kniznica"), action: {
+            return ActionSheet(title: Text("Vyfotiť fotku alebo vybrať z knižnice"), message: Text(""), buttons:
+                [.default(Text("Knižnica"), action: {
                     self.source = .photoLibrary
                     self.showPicker.toggle()
                 }),
@@ -326,16 +326,16 @@ extension PhotosView {
                     self.source = .camera
                     self.showPicker.toggle()
                  }),
-                .cancel(Text("Zavri"))
+                .cancel(Text("Zavrieť"))
                 ]
             )
         } else {
-            return ActionSheet(title: Text("Vyber fotku z kniznice"), message: Text(""), buttons:
-                [.default(Text("Kniznica"), action: {
+            return ActionSheet(title: Text("Vybrať fotku z knižnice"), message: Text(""), buttons:
+                [.default(Text("Knižnica"), action: {
                     self.source = .photoLibrary
                     self.showPicker.toggle()
                 }),
-                .cancel(Text("Zavri"))
+                .cancel(Text("Zavrieť"))
                 ]
             )
         }

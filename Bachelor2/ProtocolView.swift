@@ -163,10 +163,8 @@ struct ProtocolView: View {
                     }
                 }
         }
+        .navigationTitle(protoID != -1 ? "Protokol \(proto.id)" : "Nový protokol")
         .toolbar{
-            ToolbarItem(placement: .navigationBarLeading){
-                protoID != -1 ? AnyView(Text("\(protoID)").foregroundColor(.gray)) : AnyView(EmptyView())
-            }
             ToolbarItem(placement: .navigationBarTrailing){
                 internalID != -1 ? AnyView(Text("\(internalID)").foregroundColor(.gray)) : AnyView(EmptyView())
             }

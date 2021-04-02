@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.managedObjectContext) var moc
     @State private var selection: Int = 0
     var body: some View {
         TabView{
             NavigationView{
                 ProtocolView()
+                    .environment(\.managedObjectContext , moc)
             }
             .tabItem{
                 VStack{
@@ -23,7 +25,9 @@ struct ContentView: View {
             .tag(0)
             
             NavigationView{
-                ProtocolListView()
+                newList()
+                    .environment(\.managedObjectContext , moc)
+                    .navigationTitle("List protokolov")
             }
             .tabItem{
                 VStack{
