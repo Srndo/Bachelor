@@ -12,28 +12,30 @@ import SwiftUI
 class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
-    var index: Int
+    @Binding var index: Int
     var protoID: Int
     
     init(isShow: Binding<Bool>, photos: Binding<[MyPhoto]>, protoID: Int, lastPhotoIndex: Binding<Int>) {
         _isShow = isShow
         _photos = photos
-        index = lastPhotoIndex.wrappedValue + 1
+        _index = lastPhotoIndex
         self.protoID = protoID
-        lastPhotoIndex.wrappedValue = lastPhotoIndex.wrappedValue + 1
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        guard let uiimage = info[.originalImage] as? UIImage else { return }
-        if let cgImage = uiimage.cgImage {
-            var dic = [Int:CGImage]()
-            dic[self.index] = cgImage
-            TextRecognizer().regognize(from: dic) { recognized in
-                self.createMyPhoto(uiimage: uiimage, recognized:  recognized)
+        DispatchQueue.global().async {
+            guard let uiimage = info[.originalImage] as? UIImage else { return }
+            if let cgImage = uiimage.cgImage {
+                var dic = [Int:CGImage]()
+                self.index = self.index + 1
+                dic[self.index] = cgImage
+                TextRecognizer().regognize(from: dic) { recognized in
+                    self.createMyPhoto(uiimage: uiimage, recognized:  recognized)
+                }
+            } else {
+                printError(from: "image picker", message: "Cannot make auto recognition of value.")
+                self.createMyPhoto(uiimage: uiimage)
             }
-        } else {
-            printError(from: "image picker", message: "Cannot make auto recognition of value.")
-            createMyPhoto(uiimage: uiimage)
         }
         isShow = false
     }
