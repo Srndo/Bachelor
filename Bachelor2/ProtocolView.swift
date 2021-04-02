@@ -53,27 +53,25 @@ struct ProtocolView: View {
                             proto.client.dic = dic
                         }
                     }
-                }
+                }.disabled(locked)
             }.foregroundColor(proto.client.filled() ? .green : .red)
-            .disabled(locked)
+
             
             DropDown(header: "Stavba"){
                 Group{
                     TextField("*Názov", text: $proto.construction.name)
                     TextField("*Adresa", text: $proto.construction.address)
                     TextField("Sekcia", text: $proto.construction.section)
-                }
+                }.disabled(locked)
             }.foregroundColor(proto.construction.filled() ? .green : .red)
-            .disabled(locked)
             
             DropDown(header: "Zariadenie"){
                 Group{
                     TextField("*Názov", text: $proto.device.name)
                     TextField("*Výrobca", text: $proto.device.manufacturer)
                     TextField("*Výrobné číslo", text: $proto.device.serialNumber)
-                }
+                }.disabled(locked)
             }.foregroundColor(proto.device.filled() ? .green : .red)
-            .disabled(locked)
             
             DropDown(header: "Metóda"){
                 Group{
@@ -95,17 +93,15 @@ struct ProtocolView: View {
                                 proto.method.about = ""
                             }
                         }
-                }
+                }.disabled(locked)
             }.foregroundColor(proto.method.filled() ? .green : .red)
-            .disabled(locked)
             
             DropDown(header: "Materiál"){
                 Group{
                     TextField("*Názov", text: $proto.material.material)
                     TextField("Podklad pod", text: $proto.material.base)
-                }
+                }.disabled(locked)
             }.foregroundColor(proto.material.filled() ? .green : .red)
-            .disabled(locked)
 
             DateView(proto: $proto, locked: $locked)
             
