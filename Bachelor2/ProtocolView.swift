@@ -11,6 +11,7 @@ struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var allPhotos: FetchedResults<MyPhoto>
+    @FetchRequest(entity: OutputArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \OutputArchive.protoID , ascending: true)]) var outputs: FetchedResults<OutputArchive>
     
     @State var internalID: Int = -1
     let protoID: Int
@@ -164,6 +165,7 @@ struct ProtocolView: View {
             openDocument()
         }
         .onDisappear{
+            self.message = ""
             modify(afterModified: closeDocument)
         }
     }

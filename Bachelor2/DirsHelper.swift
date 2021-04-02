@@ -118,13 +118,12 @@ class Dirs {
         return specific.appendingPathComponent("photos.zip")
     }
     
-    //MARK: TODO not deleting
-    func removeDir(at: URL?) -> Bool {
+    func remove(at: URL?) -> Bool {
         guard let path = at else { return true }
         do {
             try fileManager.removeItem(at: path)
         } catch {
-            printError(from: "remove Dir", message: error.localizedDescription)
+            printError(from: "remove dir/file", message: error.localizedDescription)
             return false
         }
         return true

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Zip
 
 struct PhotoView: View {
     @Environment(\.managedObjectContext) var moc
@@ -86,15 +85,15 @@ struct PhotosView: View {
                 }
             }
             
-            Section(header: VStack{Text("Pre zmenu hodnoty podrž prst na hodnote.");Text("Pre stiahnutie nenačítanej fotky podrdž prst na fotke.")}){
+            Section(header: Text("Pre zmenu hodnoty podrž prst na hodnote.")){
                 ForEach(photos, id:\.self) { photo in
                     HStack{
-                        ImageView(photo: photo).onLongPressGesture {
-                            if !photo.local {
-                                Cloud.shared.downloadPhoto(photo: photo)
-                                // MARK: TODO: reload
-                            }
-                        }
+                        ImageView(photo: photo)
+//                            .onLongPressGesture {
+//                                if !photo.local {
+//                                    Cloud.shared.downloadPhoto(photo: photo)
+//                                }
+//                            }
                         Divider()
                         Text(String(photo.value)).onLongPressGesture {
                             self.edit.toggle()
