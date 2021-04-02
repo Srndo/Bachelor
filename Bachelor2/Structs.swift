@@ -65,7 +65,8 @@ struct Proto: Codable, Equatable {
             lhs.device == rhs.device &&
             lhs.method == rhs.method &&
             lhs.material == rhs.material &&
-            lhs.lastPhotoIndex == rhs.lastPhotoIndex {
+            lhs.lastPhotoIndex == rhs.lastPhotoIndex &&
+            lhs.locked == rhs.locked {
             return true
         }
         return false
@@ -83,6 +84,7 @@ struct Proto: Codable, Equatable {
     var material: Material = Material()
     
     var lastPhotoIndex: Int = 0
+    var locked: Bool = false
 }
 
 
