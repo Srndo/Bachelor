@@ -17,6 +17,7 @@
         <attribute name="value" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
     </entity>
     <entity name="OutputArchive" representedClassName="OutputArchive" syncable="YES">
+        <attribute name="internalID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="pdf" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="recordID" optional="YES" attributeType="Transformable"/>
@@ -25,6 +26,6 @@
     <elements>
         <element name="DatabaseArchive" positionX="-63" positionY="-18" width="128" height="134"/>
         <element name="MyPhoto" positionX="-54" positionY="18" width="128" height="104"/>
-        <element name="OutputArchive" positionX="-45" positionY="45" width="128" height="89"/>
+        <element name="OutputArchive" positionX="-45" positionY="45" width="128" height="104"/>
     </elements>
 </model>
