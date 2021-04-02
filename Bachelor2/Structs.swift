@@ -15,45 +15,62 @@ enum Dimensions: String, Equatable, CaseIterable, Codable {
     case kiloNewton = "kNm"
 }
 
-struct Company: Codable {
+struct Company: Codable, Equatable {
     var ico: Int = 0
     var dic: Int = 0
     var name: String = ""
     var address: String = ""
 }
 
-struct Construction: Codable {
+struct Construction: Codable, Equatable {
     var name: String = ""
     var address: String = ""
     var section: String = ""
 }
 
-struct Device: Codable {
+struct Device: Codable, Equatable {
     var serialNumber: String = ""
     var name: String = ""
     var manufacturer: String = ""
 }
 
-struct MyMethod: Codable {
+struct MyMethod: Codable, Equatable {
     var name: String = ""
     var about: String = "Popis metódy"
     var monitoredDimension: Dimensions = Dimensions.kiloPascal
     var requestedValue: Double = 0.0
 }
 
-struct Material: Codable {
+struct Material: Codable, Equatable {
     var material: String = ""
     var base: String = ""
 }
 
-struct Clima: Codable {
+struct Clima: Codable, Equatable {
     var humAir: Double = 0.0
     var humCon: Double = 0.0
     var tempAir: Double = 0.0
     var tempCon: Double = 0.0
 }
 
-struct Proto: Codable {
+struct Proto: Codable, Equatable {
+    static func == (lhs: Proto, rhs: Proto) -> Bool {
+        if lhs.id == rhs.id &&
+            lhs.creationDate == rhs.creationDate &&
+            lhs.info == rhs.info &&
+            lhs.internalID == rhs.internalID &&
+            lhs.clima == rhs.clima &&
+            lhs.client == rhs.client &&
+            lhs.construction == rhs.construction &&
+            lhs.device == rhs.device &&
+            lhs.method == rhs.method &&
+            lhs.material == rhs.material &&
+            lhs.lastPhotoIndex == rhs.lastPhotoIndex {
+            return true
+        }
+        return false
+    }
+    
     var id: Int
     var creationDate: Date?
     var info: String = ""
