@@ -27,8 +27,9 @@ class Cloud {
     
     private var DAs: [DatabaseArchive] = []
     private var photos: [MyPhoto] = []
+    private var outputs: [OutputArchive] = []
     private var newRecords: Bool {
-        if DAs.isEmpty && photos.isEmpty {
+        if DAs.isEmpty && photos.isEmpty && outputs.isEmpty {
             return false
         }
         return true
@@ -36,7 +37,7 @@ class Cloud {
     
     private var toDelete: [CKRecord.ID : CKRecord.RecordType] = [:]
     private var fetching: Bool = false
-    
+    private var inserting: Bool = false
     
     /**
      # Start zone
@@ -113,12 +114,14 @@ class Cloud {
         }
     }
     
+    // MARK: - Diff fetch
     /**
      # Diff Fetch
      Fetch only records that have changed since that anchor.
      Anchor is server token which is updated by every succesfull call of this function.
      */
     func doDiffFetch() {
+        guard fetching == false else { return }
         fetching = true
         var toSave: [CKRecord] = []
         var optsDict: [CKRecordZone.ID : CKFetchRecordZoneChangesOperation.ZoneConfiguration] = [:]
@@ -146,8 +149,9 @@ class Cloud {
         db.add(operation)
     }
     
+    // MARK: - Save to cloud functions
     /**
-     # Save to cloud
+     # Save protocol to cloud
      Try to save new record into private database on cloud.
      - Parameter recordType: Record type of CKRecord to create
      - Parameter protoID: ID of protocol to save
@@ -183,7 +187,7 @@ class Cloud {
     }
     
     /**
-     # Save to cloud
+     # Save photo to cloud
      Try to save new record into private database on cloud.
      - Parameter recordType: Record type of CKRecord to create
      - Parameter photo: Instance of MyPhoto (NSManagedObject)
@@ -231,7 +235,7 @@ class Cloud {
     }
     
     /**
-     # Save to cloud
+     # Save output to cloud
      Try to save new record into private database on cloud.
      - Parameter recordType: Record type of CKRecord to create
      - Parameter protoID: ID of protocol to save
@@ -239,7 +243,7 @@ class Cloud {
      - Parameter pathTo: URL to ZIP file
      - Parameter completition: Return CKRecord if record was saved else nil
      */
-    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, pathTo zip: URL, completition: @escaping (CKRecord.ID?) -> ()){
+    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, zipURL: URL, /*pdfURL: URL,*/ completition: @escaping (CKRecord.ID?) -> ()){
         guard recordType == RecordType.outputs else {
             printError(from: "save to cloud [zip]", message: "Record type is not correct")
             completition(nil)
@@ -250,8 +254,12 @@ class Cloud {
         record["protoID"] = protoID as CKRecordValue
         record["internalID"] = internalID as CKRecordValue
         
-        let asset = CKAsset(fileURL: zip)
-        record["zip"] = asset
+        let zip = CKAsset(fileURL: zipURL)
+        record["zip"] = zip
+        
+        // MARK: TODO this fce for PDF
+//        let pdf = CKAsset(fileURL: pdfURL)
+//        record["pdf"] = pdf
         
         db.save(record) { record, err in
             DispatchQueue.main.async {
@@ -274,6 +282,7 @@ class Cloud {
         }
     }
     
+    // MARK: - Delete from cloud
     /**
      # Delete from cloud
      Try to remove record from private database on cloud.
@@ -300,6 +309,7 @@ class Cloud {
         }
     }
     
+    // MARK: - Download photo
     func downloadPhoto(photo: MyPhoto) {
         guard let recordID = photo.recordID else { return }
         db.fetch(withRecordID: recordID) { record, err in
@@ -344,8 +354,9 @@ class Cloud {
         }
     }
     
+    // MARK: - Modify on cloud functions
     /**
-     # Modify on cloud
+     # Modify photo on cloud
      Try to modify record in private database on cloud.
      - Parameter photo: Instance of MyPhoto (NSManagedObject)
      */
@@ -378,7 +389,7 @@ class Cloud {
     }
     
     /**
-     # Modify on cloud
+     # Modify photo on cloud
      Try to modify record in private database on cloud.
      - Parameter recordID: Record ID of CKRecord to delete
      - Parameter proto: Instance of Proto (NSManagedObject)
@@ -410,6 +421,7 @@ class Cloud {
         }
     }
     
+    // MARK: - Save record into class variables
     /**
      # Save records
      Will save new fetched records into class variables as instance of NSManagedObject (inserted into nil).
@@ -428,7 +440,7 @@ class Cloud {
                     continue
                     
                 case RecordType.outputs:
-                    saveZip(record: record)
+                    saveOutput(record: record)
                     continue
                     
                 default:
@@ -490,6 +502,8 @@ class Cloud {
             photo.value = value
             photo.local = false
         }
+        
+        guard !photos.contains(where: { $0.protoID == photo.protoID && $0.name == photo.name }) else { return }
         photos.append(photo)
     }
     
@@ -512,40 +526,59 @@ class Cloud {
         let DA = DatabaseArchive(entity: DatabaseArchive.entity(), insertInto: nil)
         guard let _ = DA.fillWithData(encodedProto: encodedProto, local: false, recordID: recordID) else { return }
         
+        guard !DAs.contains(where: { $0.protoID == DA.protoID }) else { return }
         DAs.append(DA)
         
     }
     
-    private func saveZip(record: CKRecord) {
+    private func saveOutput(record: CKRecord) {
+        let recordID = record.recordID
+        
         guard let protoID = record["protoID"] as? Int else {
-            printError(from: "cloud save zip", message: "ProtoID is nil")
+            printError(from: "cloud save output", message: "ProtoID is nil")
             return
         }
         
         guard let internalID = record["internalID"] as? Int else {
-            printError(from: "cloud save zip", message: "internalID is nil")
+            printError(from: "cloud save output", message: "internalID is nil")
             return
         }
         
-        guard let asset = record["zip"] as? CKAsset else {
-            printError(from: "cloud save zip", message: "Asset is missing")
+//        guard let pdf = record["pdf"] as? CKAsset else {
+//            printError(from: "cloud save output", message: "PDF is missing")
+//            return
+//        }
+        
+        guard let zip = record["zip"] as? CKAsset else {
+            printError(from: "cloud save output", message: "ZIP is missing")
             return
         }
         
-        guard let zipURL = asset.fileURL else {
-            printError(from: "cloud save zip", message: "ZIP URL is nil")
+        guard let zipURL = zip.fileURL else {
+            printError(from: "cloud save output", message: "ZIP URL is nil")
             return
         }
-        guard let data = try? Data(contentsOf: zipURL) else {
-            printError(from: "cloud save zip", message: "Cannot create data of CKAsset")
+        guard let zipData = try? Data(contentsOf: zipURL) else {
+            printError(from: "cloud save output", message: "Cannot create data of CKAsset")
             return
         }
-        guard let saveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
         
-        FileManager.default.createFile(atPath: saveURL.path, contents: data, attributes: nil)
+        // MARK: TODO: uncomment for PDF
+        guard let zipSaveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
+//        guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
         
+        FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
+//        FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
+        
+        let output = OutputArchive(entity: OutputArchive.entity(), insertInto: nil)
+        output.fill(recordID: recordID, protoID: protoID, internalID: internalID, zipExist: true, pdfExist: false) // MARK: TODO: change pdfExist to true
+        
+        guard !outputs.contains(where: { $0.protoID == output.protoID && $0.internalID == output.internalID }) else { return }
+        outputs.append(output)
     }
     
+    
+    // MARK: - Insert fetched changes into local core data
     /**
      # Insert fetch changes into local database
      If class variables contains NSMangedObjects is not empty.
@@ -554,24 +587,28 @@ class Cloud {
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
-    func insertFetchChangeIntoCoreData(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>) {
+    func insertFetchChangeIntoCoreData(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>, allOutputs: FetchedResults<OutputArchive>) {
         guard fetching == false else { return }
-        
+        guard inserting == false else { return }
+        inserting = true
         if !toDelete.isEmpty {
-            deleteRecords(moc: moc, allPhotos: allPhotos, allDAs: allDAs)
+            deleteRecords(moc: moc, allPhotos: allPhotos, allDAs: allDAs, allOutputs: allOutputs)
         }
         
         if newRecords {
             insertIntoMocPhotos(moc: moc, allPhotos: allPhotos)
             insertIntoMocDAs(moc: moc, allDAs: allDAs)
+            insertIntoMocOutputs(moc: moc, allOutputs: allOutputs)
         }
         
         if !toDelete.isEmpty || newRecords {
-            moc.trySave(errorFrom: "insert fetch into DB", error: "Cannot save fetched changes")
+            moc.trySave(savingFrom: "insertFetchChangeIntoCoreData", errorFrom: "insert fetch into DB", error: "Cannot save fetched changes")
             photos = []
             DAs = []
+            outputs = []
             toDelete = [:]
         }
+        inserting = false
     }
     
     /**
@@ -581,7 +618,7 @@ class Cloud {
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
-    private func deleteRecords(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>){
+    private func deleteRecords(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>, allOutputs: FetchedResults<OutputArchive>){
         for (recordID, recordType) in toDelete {
             if recordType == RecordType.protocols {
                 guard let remove = allDAs.first(where: { $0.recordID == recordID }) else { continue }
@@ -604,8 +641,10 @@ class Cloud {
                 remove.deleteFromDisk()
                 moc.delete(remove)
             } else if recordType == RecordType.outputs {
-                //MARK: TODO remove ZIPs
-                print("TODO: Remove ZIPs")
+                guard let remove = allOutputs.first(where: { $0.recordID == recordID }) else { continue }
+                if remove.deleteFromDisk() {
+                    moc.delete(remove)
+                }
             } else {
                 printError(from: "delete record", message: "This record type \(recordType) is untreated")
             }
@@ -617,7 +656,7 @@ class Cloud {
      Insert new fetched photos changes into local database.
      - Parameter moc: NSManagedObjectContext into which is changes inserted
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
-     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
+
      */
     private func insertIntoMocPhotos(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>) {
         for photo in photos {
@@ -641,7 +680,6 @@ class Cloud {
      # Insert fetched protos into local database
      Insert new fetched protos changes into local database.
      - Parameter moc: NSManagedObjectContext into which is changes inserted
-     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
     private func insertIntoMocDAs(moc: NSManagedObjectContext, allDAs: FetchedResults<DatabaseArchive>) {
@@ -658,6 +696,19 @@ class Cloud {
                 let document = Document(protoID: proto.id, proto: proto)
                 document.createNew(completition: nil)
             }
+        }
+    }
+    
+    /**
+     # Insert fetched outputs into local database
+     Insert new fetched outputs into local database.
+     - Parameter moc: NSManagedObjectContext into which is changes inserted
+     - Parameter allOutputs: Fetched results of already exists OutputArchive in local database
+     */
+    private func insertIntoMocOutputs(moc: NSManagedObjectContext, allOutputs: FetchedResults<OutputArchive>) {
+        for output in outputs {
+            guard !allOutputs.contains(where: {$0.protoID == output.protoID && $0.internalID == output.internalID}) else { continue }
+            moc.insert(output)
         }
     }
 }
