@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct DropDown<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
     let header: String
     @State var show: Bool = false
     let content: () -> Content
@@ -30,7 +31,7 @@ struct DropDown<Content: View>: View {
         }
         if show {
             self.content()
-                .foregroundColor(.black)
+                .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
         }
     }
 }

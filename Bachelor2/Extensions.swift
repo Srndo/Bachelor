@@ -23,6 +23,15 @@ extension Proto {
     }
 }
 
+extension Clima {
+    func filled() -> Bool {
+        if (humCon <= 0.0 || humAir <= 0.0) || (tempAir == 0.0 && tempCon == 0.0) {
+            return false
+        }
+        return true
+    }
+}
+
 extension Workflow {
     func filled() -> Bool {
         return !name.isEmpty
@@ -97,6 +106,7 @@ extension ProtocolView {
     func modify(afterModified: @escaping (() -> ())) {
         guard protoID != -1 else { return }
         guard let document = document else { printError(from: "modify", message: "Document is nil"); return }
+        if lastPhotoNumber > proto.lastPhotoIndex { proto.lastPhotoIndex = lastPhotoNumber } // if photo was added
         guard document.proto != proto else { afterModified(); return } // if proto is not changed afterModified contains closeDocument
         guard let DA = allDA.first(where: { $0.protoID == Int16(proto.id) }) else { printError(from: "modify", message: "Protocol for modifying is not in database"); return }
         guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
@@ -158,7 +168,15 @@ extension ProtocolView {
         }
     }
     
-    // TODO: If cannot create remove
+    func removeLocalCopiesOfPhotos() {
+        // Ready for removing on create of output
+        for photo in self.photos {
+            photo.deleteFromDisk()
+            photo.local = false
+            Cloud.shared.modifyOnCloud(photo: photo)
+        }
+    }
+    
     func createOutput(creatingOutput: Binding<Bool>) {
         // increment internalID because we creating new output
         self.proto.internalID = proto.internalID + 1
@@ -197,23 +215,15 @@ extension ProtocolView {
         guard let names = Dirs.shared.getConentsOfDir(at: imagesURL) else { return nil } // photos urls
         guard let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return nil } // dir where zip gonna be stored
         
-        // if we gonna remove local copies of photos need to check if all photos that contains this protoID is local
-        
         do {
             try Zip.zipFiles(paths: names, zipFilePath: zipURL, password: nil, progress: { (progres) -> () in
-                print(progres)
+                print("Ziping: \(progres)%")
             })
         } catch {
             printError(from: "cretePhotosZIP", message: error.localizedDescription)
             return  nil
         }
 
-        // Ready for removing on create of output
-//        for photo in self.photos {
-//            photo.deleteFromDisk()
-//            photo.local = false
-//            Cloud.shared.modifyOnCloud(photo: photo)
-//        }
         moc.trySave(savingFrom: "createPhotosZip", errorFrom: "create ZIP from photos", error: "Cannot saved remove changes [photo.local -> false]")
         print("ZIP with photos of protocol \(self.proto.id) was created.")
         return zipURL
@@ -384,7 +394,8 @@ extension PhotosView {
         }
     }
     
-    func getZipPhotos(zipURL: URL) {
+    func getZipPhotos() {
+        guard let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
         guard let imagePath = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         do {
             try Zip.unzipFile(zipURL, destination: imagePath, overwrite: true, password: nil)
@@ -410,6 +421,7 @@ extension PhotosView {
         photos.forEach{ photo in
             if names.contains(String(photo.name)) {
                 photo.local = true
+                Cloud.shared.modifyOnCloud(photo: photo)
             }
         }
         moc.trySave(savingFrom: "insertExtractedPhotsToCoreData", errorFrom: "create photos from ZIP", error: "Cannot saved creating changes [photo.local -> true]")

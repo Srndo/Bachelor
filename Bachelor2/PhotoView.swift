@@ -35,12 +35,16 @@ struct PhotoView: View {
             .hidden()
             .frame(width: 0)
             
-            Button(action:{
-                self.show.toggle()
-            }){
-                Text("Fotky")
-                    .bold()
-                    .foregroundColor(photos.isEmpty ? Color.red : Color.green)
+            HStack{
+                Button(action:{
+                    self.show.toggle()
+                }){
+                    Text("Fotky")
+                        .bold()
+                        .foregroundColor(photos.isEmpty ? Color.red : Color.green)
+                }
+                Spacer()
+                Image(systemName: "photo.on.rectangle").foregroundColor(photos.isEmpty ? Color.red : Color.green)
             }
         }
     }
@@ -48,13 +52,12 @@ struct PhotoView: View {
 
 struct PhotosView: View {
     @Environment(\.managedObjectContext) var moc
-    
+
     @State private var actionShow: Bool = false
     @State var showPicker: Bool = false
     @State var source: UIImagePickerController.SourceType = .photoLibrary
     
     @Binding var photos: [MyPhoto]
-    // MARK: TODO: test lastPhotoIndex and for cloud too
     @Binding var lastPhotoIndex: Int
     @State var protoID: Int
     @State var internalID: Int
@@ -65,6 +68,7 @@ struct PhotosView: View {
     @State private var newDiameter: String = ""
     @State private var editingPhoto: MyPhoto?
     @State private var placeholder: String = "Zadajte hodnotu"
+    @State private var refresh: Bool = false
     @Binding var locked: Bool
     
     var body: some View {
@@ -91,15 +95,16 @@ struct PhotosView: View {
                 }
             }
             
-            Section(header: Text("Pre zmenu hodnoty alebo popisu podrž prst na hodnote.")){
+            Section(header: Text("Pre zmenu hodnoty alebo popisu podrž prst na hodnote.\nPre načítanie fotky podrž prst na fotke.")){
                 ForEach(photos, id:\.self) { photo in
                     HStack{
                         ImageView(photo: photo)
-//                            .onLongPressGesture {
-//                                if !photo.local {
-//                                    Cloud.shared.downloadPhoto(photo: photo)
-//                                }
-//                            }
+                            .onLongPressGesture {
+                                if !photo.local {
+                                    getZipPhotos()
+                                    refresh.toggle()
+                                }
+                            }
                         Divider()
                         VStack(alignment: .center) {
                             Text("Hodnota")

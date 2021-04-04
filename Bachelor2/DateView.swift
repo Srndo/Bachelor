@@ -26,7 +26,7 @@ struct DateView: View {
             HStack{
                 Text("Dátum").bold().foregroundColor(color)
                 Spacer()
-                Image(systemName: "calendar").foregroundColor(.black)
+                Image(systemName: "calendar").foregroundColor(color)
             }
         })
         .sheet(isPresented: $show){

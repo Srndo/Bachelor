@@ -29,18 +29,18 @@ extension MyPhoto {
         return dir.appendingPathComponent("\(name).jpg")
     }
     
-    func savePhotoToDisk(photo: Data?, protoID: Int, name: Int, value: Double){
+    func savePhotoToDisk(photo: Data?, protoID: Int, name: Int, value: Double, diameter: Double){
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         guard let data = photo else { printError(from: "save photo", message: "Data is nil"); return }
-        savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value)
+        savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value, diameter: diameter)
 
     }
     
-    func savePhotoToDisk(photo: UIImage?, protoID: Int, name: Int, value: Double) {
+    func savePhotoToDisk(photo: UIImage?, protoID: Int, name: Int, value: Double, diameter: Double) {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
             guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
             guard let data = photo.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert photo into data"); return }
-            savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value)
+        savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter)
     }
     
     func deleteFromDisk() {
@@ -59,14 +59,14 @@ extension MyPhoto {
         }
     }
     
-    private func savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double) {
+    private func savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double) {
         DispatchQueue.global().async {
             self.name = Int16(name)
             self.protoID = Int16(protoID)
             self.local = false
             self.value = value
             self.descriptionOfPlace = "-"
-            self.targetDiameter = 50.0
+            self.targetDiameter = diameter
             let imagePath = dir.appendingPathComponent("\(name).jpg")
             do {
                 try data.write(to: imagePath)

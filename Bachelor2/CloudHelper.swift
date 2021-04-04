@@ -187,6 +187,7 @@ class Cloud {
         }
     }
     
+    // MARK: saveToCloud(photo)
     /**
      # Save photo to cloud
      Try to save new record into private database on cloud.
@@ -206,6 +207,7 @@ class Cloud {
         record["value"] = photo.value as CKRecordValue
         record["name"] = photo.name as CKRecordValue
         record["local"] = photo.local as CKRecordValue
+        record["diameter"] = photo.targetDiameter as CKRecordValue
         
         guard let path = photo.getPhotoPath() else {
             printError(from: "save to cloud [photo]", message: "Photo path is nil")
@@ -235,6 +237,7 @@ class Cloud {
         }
     }
     
+    // MARK: saveToCloud(output)
     /**
      # Save output to cloud
      Try to save new record into private database on cloud.
@@ -336,6 +339,11 @@ class Cloud {
                 return
             }
             
+            guard let diameter = record["diameter"] as? Double else {
+                printError(from: "cloud save photo", message: "Diameter is nil")
+                return
+            }
+            
             guard let asset = record["photo"] as? CKAsset else {
                 printError(from: "cloud save photo", message: "Asset is missing")
                 return
@@ -350,7 +358,7 @@ class Cloud {
                 printError(from: "cloud save photo", message: "Cannot create data from asset")
                 return
             }
-            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value)
+            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value, diameter: diameter)
             photo.local = true
             self.modifyOnCloud(photo: photo) // save local -> true [on cloud]
         }
@@ -376,6 +384,7 @@ class Cloud {
             record["value"] = photo.value as CKRecordValue
             record["name"] = photo.name as CKRecordValue
             record["local"] = photo.local as CKRecordValue
+            record["diameter"] = photo.targetDiameter as CKRecordValue
             
             self.db.save(record) { record, err in
                 if let err = err {
@@ -390,6 +399,7 @@ class Cloud {
         }
     }
     
+    // MARK: modifyOnCloud(proto)
     /**
      # Modify proto on cloud
      Try to modify record in private database on cloud.
@@ -423,6 +433,7 @@ class Cloud {
         }
     }
     
+    // MARK: modifyOnCloud(output)
     /**
      # Modify output on cloud
      Try to modify record in private database on cloud.
@@ -439,8 +450,8 @@ class Cloud {
                 return
             }
             guard let record = record else { return }
-            record["zip-local"] = output.zip as CKRecordValue
-            record["pdf-local"] = output.pdf as CKRecordValue
+            record["zipLocal"] = output.zip as CKRecordValue
+            record["pdfLocal"] = output.pdf as CKRecordValue
             
             self.db.save(record) { record, err in
                 if let err = err {
@@ -483,6 +494,7 @@ class Cloud {
         }
     }
     
+    // MARK: savePhoto()
     /**
      # Save photo
      Takes one CKRecord and if contains all needed informations create MyPhoto.
@@ -511,6 +523,11 @@ class Cloud {
             return
         }
         
+        guard let diameter = record["diameter"] as? Double else {
+            printError(from: "cloud save photo", message: "Diameter is nil")
+            return
+        }
+        
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
         photo.recordID = recordID
         
@@ -529,18 +546,20 @@ class Cloud {
                 printError(from: "cloud save photo", message: "Cannot create data from asset")
                 return
             }
-            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value)
+            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value, diameter: diameter)
         } else {
             photo.name = Int16(name)
             photo.protoID = Int16(protoID)
             photo.value = value
             photo.local = false
+            photo.targetDiameter = diameter
         }
         
         guard !photos.contains(where: { $0.protoID == photo.protoID && $0.name == photo.name }) else { return }
         photos.append(photo)
     }
     
+    // MARK: saveProto()
     /**
      # Save proto
      Takes one CKRecord and if contains all needed informations create Proto.
@@ -565,6 +584,12 @@ class Cloud {
         
     }
     
+    // MARK: saveOutput()
+    /**
+     # Save proto
+     Takes one CKRecord and if contains all needed informations create Output.
+     - Parameter record: record to save as OutputArchiver
+     */
     private func saveOutput(record: CKRecord) {
         let recordID = record.recordID
         
@@ -592,11 +617,21 @@ class Cloud {
             return
         }
         
-        guard let zipSaveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
-        guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
+        guard let zipLocal = record["zipLocal"] as? Bool, let pdfLocal = record["pdfLocal"] as? Bool else {
+            printError(from: "cloud save output", message: "record do not contains informations if files is local")
+            return
+        }
         
-        let zipExist = FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
-        let pdfExist = FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
+        var zipExist: Bool = false
+        var pdfExist: Bool = false
+        if zipLocal {
+            guard let zipSaveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
+            zipExist = FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
+        }
+        if pdfLocal {
+            guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
+            pdfExist = FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
+        }
         
         let output = OutputArchive(entity: OutputArchive.entity(), insertInto: nil)
         output.fill(recordID: recordID, protoID: protoID, internalID: internalID, zipExist: zipExist, pdfExist: pdfExist)
@@ -648,6 +683,7 @@ class Cloud {
         }
     }
     
+    // MARK: deleteRecords()
     /**
      # Delete records
      Remove objects (saved in class variable) from local database and his files from sandbox.
@@ -688,6 +724,7 @@ class Cloud {
         }
     }
     
+    // MARK: insertIntoMocPhotos()
     /**
      # Insert fetched photos into local database
      Insert new fetched photos changes into local database.
@@ -713,6 +750,7 @@ class Cloud {
         }
     }
     
+    // MARK: insertIntoMocDAs()
     /**
      # Insert fetched protos into local database
      Insert new fetched protos changes into local database.
@@ -736,6 +774,7 @@ class Cloud {
         }
     }
     
+    // MARK: insertIntoMocOutputs()
     /**
      # Insert fetched outputs into local database
      Insert new fetched outputs into local database.
@@ -744,8 +783,20 @@ class Cloud {
      */
     private func insertIntoMocOutputs(moc: NSManagedObjectContext, allOutputs: [OutputArchive]) {
         for output in outputs {
-            guard !allOutputs.contains(where: {$0.protoID == output.protoID && $0.internalID == output.internalID}) else { continue }
-            moc.insert(output)
+            if let update = allOutputs.first(where: {$0.protoID == output.protoID && $0.internalID == output.internalID}) {
+                if update.zip == true && output.zip == false {
+                    // remove local copy
+                    _ = update.deleteZIPFromDisk()
+                }
+                if update.pdf == true && output.pdf == false {
+                    // remove local copy
+                    _ = update.deletePDFFromDisk()
+                }
+                update.pdf = output.pdf
+                update.zip = output.zip
+            } else {
+                moc.insert(output)
+            }
         }
     }
 }

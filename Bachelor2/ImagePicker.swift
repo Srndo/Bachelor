@@ -46,7 +46,7 @@ class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
     
     private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized))
+        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized), diameter: 50.0)
         DispatchQueue.main.async {
             self.photos.append(photo)
         }

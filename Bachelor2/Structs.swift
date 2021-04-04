@@ -84,7 +84,7 @@ struct Proto: Codable, Equatable {
     var creationDate: Date?
     var info: String = ""
     var internalID: Int = 0
-    var clima: Clima?
+    var clima: Clima = Clima()
     var client: Company = Company()
     var construction: Construction = Construction()
     var device: Device = Device()

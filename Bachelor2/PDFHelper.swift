@@ -97,7 +97,7 @@ class PDF {
                                                  y: yForAntoherLine)
             yForAntoherLine += createRowOfThirds(first: "Názov: \(proto.device.name)\nVýrobca: \(proto.device.manufacturer)\nVýrobné číslo: \(proto.device.serialNumber)",
                                                  second: "Skúšaný materiál: \(proto.material.material)\n" + (proto.material.base != "" ? "Podklad: \(proto.material.base)" : "") + "Zhotoviteľ: \(proto.material.manufacturer)",
-                                                 third: "Klimatické podmienky: TODO",
+                                                 third: "Teplota ovzdušia: \(proto.clima.tempAir) °C\nVlhkosť ovzdušia: \(proto.clima.humAir) %\nTeplota konštrukcie: \(proto.clima.tempCon) °C\nVlhkosť konštrukcie: \(proto.clima.humCon) %",
                                                  y: yForAntoherLine) + 10 // + padding
             yForAntoherLine += createRowOfThirds(bold: true, first: "Dátum realizácie skúšky:",
                                                  second: "Miesto a predmet skúšky:",

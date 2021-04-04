@@ -23,40 +23,42 @@ struct VersionsView: View {
     var body: some View {
         List {
             ForEach(versions, id:\.self) { version in
-                HStack{
+                ZStack{
                     NavigationLink(destination: PDF().showPDF(version: version)){
-                        HStack{
-                            Text("\(version.internalID)")
-                            if version.pdf {
-                                Spacer()
-                                Text("protokol.pdf")
-                            }
-                            if version.zip {
-                                Spacer()
-                                Text("fotky.zip")
-                            }
-                        }
+                        EmptyView()
                     }
-                    Spacer()
-                    Spacer()
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(.blue)
-                        .onTapGesture {
-                            var items: [Any] = []
-                            if version.pdf {
-                                guard let pdfURL = Dirs.shared.getPdfURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
-                                items.append(pdfURL)
-                            }
-                            if version.zip {
-                                guard let zipURL = Dirs.shared.getZipURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
-                                items.append(zipURL)
-                            }
-                            
-                            if share(items: items) {
-                                message = "Súbory možné odoslať"
-                            } else {
-                                message = "ERROR: Súbory sa nepodarilo odoslať"
-                            }
+                    .hidden()
+                    HStack{
+                        Text("\(version.internalID)")
+                        if version.pdf {
+                            Spacer()
+                            Text("protokol.pdf")
+                        }
+                        if version.zip {
+                            Spacer()
+                            Text("fotky.zip")
+                        }
+                        Spacer()
+                        Spacer()
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                var items: [Any] = []
+                                if version.pdf {
+                                    guard let pdfURL = Dirs.shared.getPdfURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
+                                    items.append(pdfURL)
+                                }
+                                if version.zip {
+                                    guard let zipURL = Dirs.shared.getZipURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
+                                    items.append(zipURL)
+                                }
+                                
+                                if share(items: items) {
+                                    message = "Súbory možné odoslať"
+                                } else {
+                                    message = "ERROR: Súbory sa nepodarilo odoslať"
+                                }
+                        }
                     }
                 }
             }

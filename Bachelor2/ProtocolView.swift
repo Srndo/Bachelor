@@ -118,7 +118,10 @@ struct ProtocolView: View {
                 }.disabled(locked)
             }.foregroundColor(proto.workflow.filled() ? .green : .red)
             
-//            Clima()
+            DropDown(header: "Klimatické podmienky") {
+                ClimaView(protoClima: $proto.clima, locked: $locked)
+                    .disabled(locked)
+            }.foregroundColor(proto.clima.filled() ? .green : .red)
 
             DateView(proto: $proto, locked: $locked)
             
@@ -165,17 +168,19 @@ struct ProtocolView: View {
                             .disabled(proto.disabled() || creatingOutput || locked)
                             Spacer()
                             Button("Uzavrieť protokol") {
-                                // MARK: TODO: WHEN locked stay locked
-                                locked.toggle()
+                                locked = true
                                 proto.locked = locked
+                                
+                                // do not need store archive photos locally anymore
                                 removeLocalZIPsExpectLast()
+                                removeLocalCopiesOfPhotos()
                             }
                             .padding(8)
                             .background(proto.disabled() || locked ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .buttonStyle(BorderlessButtonStyle())
-//                            .disabled(proto.disabled() || locked)
+                            .disabled(proto.disabled() || locked)
                         }
                     }
                     
@@ -191,9 +196,6 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-            // in start app was diff fetch on appear it chceck if fetch is still in progress if not
-            // will insert every changes into database
-//            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: allDA, allOutputs: allOutputs)
             printDB()
 //            clearDB()
             if protoID > -1 {
@@ -250,5 +252,9 @@ struct ProtocolView: View {
         proto.method.type = "Odtrhová skúška"
         proto.method.monitoredDimension = "odtrhová sila / odtrhové napätie"
         proto.workflow.name = "PP-67"
+        proto.clima.humAir = Double(number)
+        proto.clima.humCon = Double(number)
+        proto.clima.tempAir = Double(number)
+        proto.clima.tempCon = Double(number)
     }
 }
