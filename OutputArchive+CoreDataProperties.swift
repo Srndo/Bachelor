@@ -30,6 +30,14 @@ extension OutputArchive {
         self.pdf = pdfExist
     }
     
+    func deleteZIPFromDisk() -> Bool {
+        let ret = Dirs.shared.remove(at: Dirs.shared.getZipURL(protoID: Int(protoID), internalID: Int(internalID)))
+        if ret {
+            zip = false
+        }
+        return ret
+    }
+    
     func deleteFromDisk() -> Bool {
         return Dirs.shared.remove(at: Dirs.shared.getSpecificOutputDir(protoID: Int(protoID), internalID: Int(internalID)))
     }

@@ -26,10 +26,10 @@ struct Filtred<T: NSManagedObject, Content: View>: View {
     
     init(filterKey: String, filter:String?, content: @escaping (T) -> Content){
         if filter != "" {
-            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [], predicate: NSPredicate(format: "%K BEGINSWITH %@", filterKey, filter!))
+            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [NSSortDescriptor(key: "protoID", ascending: true)], predicate: NSPredicate(format: "%K BEGINSWITH %@", filterKey, filter!))
         }
         else{
-            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [])
+            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [NSSortDescriptor(key: "protoID", ascending: true)])
         }
         self.content = content
     }

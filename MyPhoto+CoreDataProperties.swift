@@ -21,6 +21,8 @@ extension MyPhoto {
     @NSManaged public var name: Int16
     @NSManaged public var value: Double
     @NSManaged public var recordID: CKRecord.ID?
+    @NSManaged public var descriptionOfPlace: String
+    @NSManaged public var targetDiameter: Double
     
     func getPhotoPath() -> URL? {
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(protoID)) else { return nil }
@@ -63,6 +65,8 @@ extension MyPhoto {
             self.protoID = Int16(protoID)
             self.local = false
             self.value = value
+            self.descriptionOfPlace = "-"
+            self.targetDiameter = 50.0
             let imagePath = dir.appendingPathComponent("\(name).jpg")
             do {
                 try data.write(to: imagePath)

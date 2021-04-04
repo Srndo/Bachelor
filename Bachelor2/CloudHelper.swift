@@ -142,8 +142,9 @@ class Cloud {
             if let serverToken = newServerToken, error == nil  {
                 UserDefaults.standard.serverChangeToken = serverToken
                 self.saveRecords(toSave: toSave)
+                self.fetching = false
+                self.insertFetchChangeIntoCoreData()
             }
-            self.fetching = false
         }
         
         db.add(operation)
@@ -243,7 +244,7 @@ class Cloud {
      - Parameter pathTo: URL to ZIP file
      - Parameter completition: Return CKRecord if record was saved else nil
      */
-    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, zipURL: URL, /*pdfURL: URL,*/ completition: @escaping (CKRecord.ID?) -> ()){
+    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, zipURL: URL, pdfURL: URL, completition: @escaping (CKRecord.ID?) -> ()){
         guard recordType == RecordType.outputs else {
             printError(from: "save to cloud [zip]", message: "Record type is not correct")
             completition(nil)
@@ -256,26 +257,27 @@ class Cloud {
         
         let zip = CKAsset(fileURL: zipURL)
         record["zip"] = zip
+        record["zipLocal"] = true as CKRecordValue
         
-        // MARK: TODO this fce for PDF
-//        let pdf = CKAsset(fileURL: pdfURL)
-//        record["pdf"] = pdf
+        let pdf = CKAsset(fileURL: pdfURL)
+        record["pdf"] = pdf
+        record["pdfLocal"] = true as CKRecordValue
         
         db.save(record) { record, err in
             DispatchQueue.main.async {
                 if let err = err {
-                    printError(from: "cloud save [zip]", message: err.localizedDescription)
+                    printError(from: "cloud save [output]", message: err.localizedDescription)
                     completition(nil)
                     return
                 }
                 
                 guard let record = record else {
-                    printError(from: "cloud save [zip]", message: "Returned record from cloud is nil")
+                    printError(from: "cloud save [output]", message: "Returned record from cloud is nil")
                     completition(nil)
                     return
                 }
                 
-                print("ZIP saved on cloud")
+                print("Outputs saved on cloud")
                 completition(record.recordID)
                 return
             }
@@ -389,7 +391,7 @@ class Cloud {
     }
     
     /**
-     # Modify photo on cloud
+     # Modify proto on cloud
      Try to modify record in private database on cloud.
      - Parameter recordID: Record ID of CKRecord to delete
      - Parameter proto: Instance of Proto (NSManagedObject)
@@ -415,6 +417,38 @@ class Cloud {
                 }
                 guard let _ = record else { return }
                 print("Protocol modified on cloud")
+                return
+            }
+            
+        }
+    }
+    
+    /**
+     # Modify output on cloud
+     Try to modify record in private database on cloud.
+     - Parameter output: Instance of OutputArchive (NSManagedObject)
+     */
+    func modifyOnCloud(output: OutputArchive) {
+        guard let recordID = output.recordID else {
+            printError(from: "modify output on cloud", message: "RecordID of output id:\(output.protoID), internal: \(output.internalID) is nil")
+            return
+        }
+        db.fetch(withRecordID: recordID) { record, err in
+            if let err = err {
+                printError(from: "modify output on cloud", message: err.localizedDescription)
+                return
+            }
+            guard let record = record else { return }
+            record["zip-local"] = output.zip as CKRecordValue
+            record["pdf-local"] = output.pdf as CKRecordValue
+            
+            self.db.save(record) { record, err in
+                if let err = err {
+                    printError(from: "modify output on cloud", message: err.localizedDescription)
+                    return
+                }
+                guard let _ = record else { return }
+                print("Output modified on cloud")
                 return
             }
             
@@ -544,34 +578,28 @@ class Cloud {
             return
         }
         
-//        guard let pdf = record["pdf"] as? CKAsset else {
-//            printError(from: "cloud save output", message: "PDF is missing")
-//            return
-//        }
-        
-        guard let zip = record["zip"] as? CKAsset else {
-            printError(from: "cloud save output", message: "ZIP is missing")
+        guard let zip = record["zip"] as? CKAsset, let pdf = record["pdf"] as? CKAsset else {
+            printError(from: "cloud save output", message: "ZIP or PDF is missing")
             return
         }
         
-        guard let zipURL = zip.fileURL else {
-            printError(from: "cloud save output", message: "ZIP URL is nil")
+        guard let zipURL = zip.fileURL, let pdfURL = pdf.fileURL else {
+            printError(from: "cloud save output", message: "ZIP or PDF URL is nil")
             return
         }
-        guard let zipData = try? Data(contentsOf: zipURL) else {
+        guard let zipData = try? Data(contentsOf: zipURL), let pdfData = try? Data(contentsOf: pdfURL) else {
             printError(from: "cloud save output", message: "Cannot create data of CKAsset")
             return
         }
         
-        // MARK: TODO: uncomment for PDF
         guard let zipSaveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
-//        guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
+        guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
         
-        FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
-//        FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
+        let zipExist = FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
+        let pdfExist = FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
         
         let output = OutputArchive(entity: OutputArchive.entity(), insertInto: nil)
-        output.fill(recordID: recordID, protoID: protoID, internalID: internalID, zipExist: true, pdfExist: false) // MARK: TODO: change pdfExist to true
+        output.fill(recordID: recordID, protoID: protoID, internalID: internalID, zipExist: zipExist, pdfExist: pdfExist)
         
         guard !outputs.contains(where: { $0.protoID == output.protoID && $0.internalID == output.internalID }) else { return }
         outputs.append(output)
@@ -587,28 +615,37 @@ class Cloud {
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
-    func insertFetchChangeIntoCoreData(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>, allOutputs: FetchedResults<OutputArchive>) {
-        guard fetching == false else { return }
-        guard inserting == false else { return }
-        inserting = true
-        if !toDelete.isEmpty {
-            deleteRecords(moc: moc, allPhotos: allPhotos, allDAs: allDAs, allOutputs: allOutputs)
+    
+    private func insertFetchChangeIntoCoreData() {
+        DispatchQueue.main.async {
+            guard self.fetching == false else { return }
+            guard self.inserting == false else { return }
+            self.inserting = true
+            
+            let moc = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+            guard let allDAs = try? moc.fetch(DatabaseArchive.fetchRequest()) as? [DatabaseArchive] else { print("ooops"); return }
+            guard let allPhotos = try? moc.fetch(MyPhoto.fetchRequest()) as? [MyPhoto] else  { print("ooops"); return }
+            guard let allOutputs = try? moc.fetch(OutputArchive.fetchRequest()) as? [OutputArchive] else { print("ooops"); return }
+            
+            if !self.toDelete.isEmpty {
+                self.deleteRecords(moc: moc, allPhotos: allPhotos, allDAs: allDAs, allOutputs: allOutputs)
+            }
+            
+            if self.newRecords {
+                self.insertIntoMocPhotos(moc: moc, allPhotos: allPhotos)
+                self.insertIntoMocDAs(moc: moc, allDAs: allDAs)
+                self.insertIntoMocOutputs(moc: moc, allOutputs: allOutputs)
+            }
+            
+            if !self.toDelete.isEmpty || self.newRecords {
+                moc.trySave(savingFrom: "insertFetchChangeIntoCoreData", errorFrom: "insert fetch into DB", error: "Cannot save fetched changes")
+                self.photos = []
+                self.DAs = []
+                self.outputs = []
+                self.toDelete = [:]
+            }
+            self.inserting = false
         }
-        
-        if newRecords {
-            insertIntoMocPhotos(moc: moc, allPhotos: allPhotos)
-            insertIntoMocDAs(moc: moc, allDAs: allDAs)
-            insertIntoMocOutputs(moc: moc, allOutputs: allOutputs)
-        }
-        
-        if !toDelete.isEmpty || newRecords {
-            moc.trySave(savingFrom: "insertFetchChangeIntoCoreData", errorFrom: "insert fetch into DB", error: "Cannot save fetched changes")
-            photos = []
-            DAs = []
-            outputs = []
-            toDelete = [:]
-        }
-        inserting = false
     }
     
     /**
@@ -618,7 +655,7 @@ class Cloud {
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
-    private func deleteRecords(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>, allDAs: FetchedResults<DatabaseArchive>, allOutputs: FetchedResults<OutputArchive>){
+    private func deleteRecords(moc: NSManagedObjectContext, allPhotos: [MyPhoto], allDAs: [DatabaseArchive], allOutputs: [OutputArchive]){
         for (recordID, recordType) in toDelete {
             if recordType == RecordType.protocols {
                 guard let remove = allDAs.first(where: { $0.recordID == recordID }) else { continue }
@@ -658,7 +695,7 @@ class Cloud {
      - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
 
      */
-    private func insertIntoMocPhotos(moc: NSManagedObjectContext, allPhotos: FetchedResults<MyPhoto>) {
+    private func insertIntoMocPhotos(moc: NSManagedObjectContext, allPhotos: [MyPhoto]) {
         for photo in photos {
             if let update = allPhotos.first(where: { $0.protoID == photo.protoID && $0.name == photo.name }) {
                 // if local copy exist and on other device was local copy deleted
@@ -682,7 +719,7 @@ class Cloud {
      - Parameter moc: NSManagedObjectContext into which is changes inserted
      - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
-    private func insertIntoMocDAs(moc: NSManagedObjectContext, allDAs: FetchedResults<DatabaseArchive>) {
+    private func insertIntoMocDAs(moc: NSManagedObjectContext, allDAs: [DatabaseArchive]) {
         for da in DAs {
             if let update = allDAs.first(where: { $0.protoID == da.protoID }) {
                 guard let proto = update.fillWithData(encodedProto: da.encodedProto, local: false, recordID: da.recordID) else { continue }
@@ -705,7 +742,7 @@ class Cloud {
      - Parameter moc: NSManagedObjectContext into which is changes inserted
      - Parameter allOutputs: Fetched results of already exists OutputArchive in local database
      */
-    private func insertIntoMocOutputs(moc: NSManagedObjectContext, allOutputs: FetchedResults<OutputArchive>) {
+    private func insertIntoMocOutputs(moc: NSManagedObjectContext, allOutputs: [OutputArchive]) {
         for output in outputs {
             guard !allOutputs.contains(where: {$0.protoID == output.protoID && $0.internalID == output.internalID}) else { continue }
             moc.insert(output)

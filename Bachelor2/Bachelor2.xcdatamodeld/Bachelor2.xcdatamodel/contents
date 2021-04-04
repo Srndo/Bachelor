@@ -10,10 +10,12 @@
         <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName=""/>
     </entity>
     <entity name="MyPhoto" representedClassName="MyPhoto" syncable="YES">
+        <attribute name="descriptionOfPlace" optional="YES" attributeType="String"/>
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="recordID" optional="YES" attributeType="Transformable"/>
+        <attribute name="targetDiameter" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="value" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
     </entity>
     <entity name="OutputArchive" representedClassName="OutputArchive" syncable="YES">
@@ -25,7 +27,7 @@
     </entity>
     <elements>
         <element name="DatabaseArchive" positionX="-63" positionY="-18" width="128" height="134"/>
-        <element name="MyPhoto" positionX="-54" positionY="18" width="128" height="104"/>
+        <element name="MyPhoto" positionX="-54" positionY="18" width="128" height="134"/>
         <element name="OutputArchive" positionX="-45" positionY="45" width="128" height="104"/>
     </elements>
 </model>

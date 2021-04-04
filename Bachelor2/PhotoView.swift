@@ -61,6 +61,8 @@ struct PhotosView: View {
     @State private var showAllert: Bool = false
     @State private var edit: Bool = false
     @State private var newValue: String = "-1.0"
+    @State private var newDesc: String  = ""
+    @State private var newDiameter: String = ""
     @State private var editingPhoto: MyPhoto?
     @State private var placeholder: String = "Zadajte hodnotu"
     @Binding var locked: Bool
@@ -89,7 +91,7 @@ struct PhotosView: View {
                 }
             }
             
-            Section(header: Text("Pre zmenu hodnoty podrž prst na hodnote.")){
+            Section(header: Text("Pre zmenu hodnoty alebo popisu podrž prst na hodnote.")){
                 ForEach(photos, id:\.self) { photo in
                     HStack{
                         ImageView(photo: photo)
@@ -99,7 +101,16 @@ struct PhotosView: View {
 //                                }
 //                            }
                         Divider()
-                        Text(String(photo.value)).onLongPressGesture {
+                        VStack(alignment: .center) {
+                            Text("Hodnota")
+                            Text("\(photo.value, specifier: "%.2f")")
+                            Spacer()
+                            Text("Popis")
+                            Text("\(photo.descriptionOfPlace)")
+                            Spacer()
+                            Text("Veľkosť terča")
+                            Text("\(photo.targetDiameter, specifier: "%.2f")")
+                        }.onLongPressGesture {
                             guard locked != true else { return }
                             self.edit.toggle()
                             newValue = String(photo.value)
@@ -112,24 +123,28 @@ struct PhotosView: View {
         .sheet(isPresented: $edit) {
             Form{
                 Section{
-                    HStack{
-                        TextField(placeholder, text: $newValue)
-                            .onChange(of: newValue, perform: { _ in
-                                guard let value = Double(newValue) else { return }
-                                if value < 0.0 {
-                                    placeholder = "Prosim zadajte znova"
-                                    newValue = ""
-                                }
-                            })
-                        Button("Ulož"){
-                            guard let photo = editingPhoto else { return }
+                    TextField(placeholder, text: $newValue)
+                        .onChange(of: newValue, perform: { _ in
                             guard let value = Double(newValue) else { return }
-                            photo.value = value
-                            moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
-                            Cloud.shared.modifyOnCloud(photo: photo)
-                            edit.toggle()
-                        }.disabled(editingPhoto == nil)
-                    }
+                            if value < 0.0 {
+                                placeholder = "Prosim zadajte znova"
+                                newValue = ""
+                            }
+                        })
+                    TextField("Zadajte popis meracieho miesta", text: $newDesc)
+                    TextField("Zadajte veľkosť terča", text: $newDiameter)
+                    Button("Ulož"){
+                        guard let photo = editingPhoto else { return }
+                        guard let value = Double(newValue) else { return }
+                        photo.value = value
+                        photo.descriptionOfPlace = newDesc
+                        if !newDiameter.isEmpty, let diameter = Double(newDiameter) {
+                            photo.targetDiameter = diameter
+                        }
+                        moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
+                        Cloud.shared.modifyOnCloud(photo: photo)
+                        edit.toggle()
+                    }.disabled(editingPhoto == nil)
                 }
             }
         }

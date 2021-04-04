@@ -8,39 +8,64 @@
 import SwiftUI
 
 struct VersionsView: View {
+    @State private var show: Bool = false
+    @State private var toShow: OutputArchive? = nil
+    @Binding var message: String
     private var versions: [OutputArchive] = []
     private var protoID: Int
     
-    init(protoID: Int, versions: [OutputArchive]) {
+    init(protoID: Int, versions: [OutputArchive], message: Binding<String>) {
         self.protoID = protoID
         self.versions = versions.sorted(by: { $0.internalID > $1.internalID })
+        _message = message
     }
     
     var body: some View {
         List {
             ForEach(versions, id:\.self) { version in
                 HStack{
-                    Text("\(version.internalID)")
-                    if version.pdf {
-                        Spacer()
-                        Text("protokol.pdf").onTapGesture {
-//                            showPDF()
+                    NavigationLink(destination: PDF().showPDF(version: version)){
+                        HStack{
+                            Text("\(version.internalID)")
+                            if version.pdf {
+                                Spacer()
+                                Text("protokol.pdf")
+                            }
+                            if version.zip {
+                                Spacer()
+                                Text("fotky.zip")
+                            }
                         }
-                        
                     }
-                    if version.zip {
-                        Spacer()
-                        Text("fotky.zip")
-                    }
+                    Spacer()
                     Spacer()
                     Image(systemName: "square.and.arrow.up")
                         .foregroundColor(.blue)
                         .onTapGesture {
-                            // MARK: TODO
-                            share(items: ["This is some text"])
+                            var items: [Any] = []
+                            if version.pdf {
+                                guard let pdfURL = Dirs.shared.getPdfURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
+                                items.append(pdfURL)
+                            }
+                            if version.zip {
+                                guard let zipURL = Dirs.shared.getZipURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
+                                items.append(zipURL)
+                            }
+                            
+                            if share(items: items) {
+                                message = "Súbory možné odoslať"
+                            } else {
+                                message = "ERROR: Súbory sa nepodarilo odoslať"
+                            }
                     }
                 }
             }
+        }
+        .onAppear{
+            toShow = versions.first
+        }
+        .onDisappear{
+            message = ""
         }
     }
     

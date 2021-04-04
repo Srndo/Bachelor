@@ -32,18 +32,21 @@ struct Device: Codable, Equatable {
     var serialNumber: String = ""
     var name: String = ""
     var manufacturer: String = ""
+    var dimension: Dimensions = Dimensions.kiloPascal
 }
 
 struct MyMethod: Codable, Equatable {
+    var type: String = ""
     var name: String = ""
     var about: String = "Popis metódy"
-    var monitoredDimension: Dimensions = Dimensions.kiloPascal
+    var monitoredDimension: String = ""
     var requestedValue: Double = 0.0
 }
 
 struct Material: Codable, Equatable {
     var material: String = ""
     var base: String = ""
+    var manufacturer: String = ""
 }
 
 struct Clima: Codable, Equatable {
@@ -51,6 +54,10 @@ struct Clima: Codable, Equatable {
     var humCon: Double = 0.0
     var tempAir: Double = 0.0
     var tempCon: Double = 0.0
+}
+
+struct Workflow: Codable, Equatable {
+    var name: String = ""
 }
 
 struct Proto: Codable, Equatable {
@@ -62,6 +69,7 @@ struct Proto: Codable, Equatable {
             lhs.clima == rhs.clima &&
             lhs.client == rhs.client &&
             lhs.construction == rhs.construction &&
+            lhs.workflow == rhs.workflow &&
             lhs.device == rhs.device &&
             lhs.method == rhs.method &&
             lhs.material == rhs.material &&
@@ -82,36 +90,8 @@ struct Proto: Codable, Equatable {
     var device: Device = Device()
     var method: MyMethod = MyMethod()
     var material: Material = Material()
+    var workflow: Workflow = Workflow()
     
     var lastPhotoIndex: Int = 0
     var locked: Bool = false
-}
-
-
-struct DropDown<Content: View>: View {
-    let header: String
-    @State var show: Bool = false
-    let content: () -> Content
-    
-    init(header: String, show: Bool = false, content: @escaping () -> Content){
-        self.header = header
-        _show = State(initialValue: show)
-        self.content = content
-    }
-    
-    var body: some View {
-        HStack{
-            Text(header)
-                .bold()
-            Spacer()
-            show ? Image(systemName: "chevron.down").foregroundColor(.gray) : Image(systemName: "chevron.right").foregroundColor(.gray)
-        }
-        .onTapGesture {
-            show.toggle()
-        }
-        if show {
-            self.content()
-                .foregroundColor(.black)
-        }
-    }
 }

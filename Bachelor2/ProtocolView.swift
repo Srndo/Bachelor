@@ -15,16 +15,22 @@ struct ProtocolView: View {
     
     @State var internalID: Int = -1
     let protoID: Int
+    
     @State var message: String = ""
     @State var proto: Proto
     @State var ico: String = ""
     @State var dic: String = ""
     @State var reqVal: String = ""
+    
     @State var document: Document?
     @State var photos: [MyPhoto] = []
     @State var lastPhotoNumber: Int = 0
+    
     @State var locked: Bool = false
     @State private var creatingOutput: Bool = false
+    
+    @State private var showSheet: Bool = false
+    @State private var creator: Company = Company()
     
     init(protoID: Int? = nil){
         if let protoID = protoID  {
@@ -48,7 +54,7 @@ struct ProtocolView: View {
                             proto.client.ico = ico
                         }
                     }
-                    TextField("*DIC", text: $dic).onChange(of: dic) { value in
+                    TextField("DIC", text: $dic).onChange(of: dic) { value in
                         if let dic = Int(value) {
                             proto.client.dic = dic
                         }
@@ -70,22 +76,24 @@ struct ProtocolView: View {
                     TextField("*Názov", text: $proto.device.name)
                     TextField("*Výrobca", text: $proto.device.manufacturer)
                     TextField("*Výrobné číslo", text: $proto.device.serialNumber)
+                    Picker("*Jednotky", selection: $proto.device.dimension) {
+                        ForEach(Dimensions.allCases, id:\.self) { dim in
+                            Text(dim.rawValue)
+                        }.foregroundColor(.black)
+                    }.foregroundColor(.gray)
                 }.disabled(locked)
             }.foregroundColor(proto.device.filled() ? .green : .red)
             
             DropDown(header: "Metóda"){
                 Group{
-                    TextField("*Názov", text: $proto.method.name)
+                    TextField("*Druh skúšky", text: $proto.method.type)
+                    TextField("*Názov metódy", text: $proto.method.name)
                     TextField("*Požadovaná minimálna hodnota", text: $reqVal).onChange(of: reqVal) { value in
                         if let reqVal = Double(value) {
                             proto.method.requestedValue = reqVal
                         }
                     }
-                    Picker("*Jednotky", selection: $proto.method.monitoredDimension) {
-                        ForEach(Dimensions.allCases, id:\.self) { dim in
-                            Text(dim.rawValue)
-                        }.foregroundColor(.black)
-                    }.foregroundColor(.gray)
+                    TextField("Sledovaná veličina", text: $proto.method.monitoredDimension)
                     TextEditor(text: $proto.method.about)
                         .foregroundColor(proto.method.about == "Popis metódy" ? .gray : .black)
                         .onTapGesture {
@@ -99,9 +107,18 @@ struct ProtocolView: View {
             DropDown(header: "Materiál"){
                 Group{
                     TextField("*Názov", text: $proto.material.material)
+                    TextField("*Zhotoviteľ", text: $proto.material.manufacturer)
                     TextField("Podklad pod", text: $proto.material.base)
                 }.disabled(locked)
             }.foregroundColor(proto.material.filled() ? .green : .red)
+            
+            DropDown(header: "Pracovný postup"){
+                Group{
+                    TextField("*Názov", text: $proto.workflow.name)
+                }.disabled(locked)
+            }.foregroundColor(proto.workflow.filled() ? .green : .red)
+            
+//            Clima()
 
             DateView(proto: $proto, locked: $locked)
             
@@ -133,33 +150,37 @@ struct ProtocolView: View {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
                         HStack{
                             Button("Vytvor výstup") {
+                                guard UserDefaults.standard.creator != nil else  {
+                                    showSheet.toggle()
+                                    return
+                                }
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createOutput(creatingOutput: $creatingOutput)
                             }
                             .padding(8)
-                            .background(creatingOutput || locked ? Color.gray : Color.blue)
+                            .background(proto.disabled() || creatingOutput || locked ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .buttonStyle(BorderlessButtonStyle())
-                            .disabled(creatingOutput || locked)
+                            .disabled(proto.disabled() || creatingOutput || locked)
                             Spacer()
                             Button("Uzavrieť protokol") {
                                 // MARK: TODO: WHEN locked stay locked
                                 locked.toggle()
                                 proto.locked = locked
-                                print(proto.locked)
+                                removeLocalZIPsExpectLast()
                             }
                             .padding(8)
-                            .background(locked ? Color.gray : Color.blue)
+                            .background(proto.disabled() || locked ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .buttonStyle(BorderlessButtonStyle())
-//                            .disabled(locked)
+//                            .disabled(proto.disabled() || locked)
                         }
                     }
                     
                     Section(header: Text("Verzie")) {
-                        VersionsView(protoID: protoID, versions: allOutputs.filter({ $0.protoID == protoID }))
+                        VersionsView(protoID: protoID, versions: allOutputs.filter({ $0.protoID == protoID }), message: $message)
                     }
                 }
         }
@@ -172,12 +193,10 @@ struct ProtocolView: View {
         .onAppear{
             // in start app was diff fetch on appear it chceck if fetch is still in progress if not
             // will insert every changes into database
-            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: allDA, allOutputs: allOutputs)
-//            printDB()
+//            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: allPhotos, allDAs: allDA, allOutputs: allOutputs)
+            printDB()
 //            clearDB()
-            if protoID == -1 {
-                proto.id = Int(allDA.last?.protoID ?? 0) + 1
-            } else {
+            if protoID > -1 {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
             openDocument()
@@ -186,14 +205,19 @@ struct ProtocolView: View {
             self.message = ""
             modify(afterModified: closeDocument)
         }
+        .sheet(isPresented: $showSheet){
+            CreatorView(show: $showSheet)
+        }
     }
     
     private func printDB() {
-        print(allPhotos.count)
-        print(allDA.count)
-        print(allOutputs.count)
+        print("----------------")
+        print("Photos: \(allPhotos.count)")
+        print("DAs: \(allDA.count)")
+        print("Outputs: \(allOutputs.count)")
+        print("----------------")
     }
-    
+
     private func clearDB() {
         for photo in allPhotos {
             moc.delete(photo)
@@ -219,8 +243,12 @@ struct ProtocolView: View {
         proto.device.name = String(number)
         proto.device.serialNumber = String(number)
         proto.material.material = String(number)
+        proto.material.manufacturer = String(number)
         proto.method.about = String(number)
         proto.method.name = String(number)
         proto.method.requestedValue = Double(number)
+        proto.method.type = "Odtrhová skúška"
+        proto.method.monitoredDimension = "odtrhová sila / odtrhové napätie"
+        proto.workflow.name = "PP-67"
     }
 }
