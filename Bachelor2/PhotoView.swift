@@ -95,16 +95,16 @@ struct PhotosView: View {
                 }
             }
             
-            Section(header: Text("Pre zmenu hodnoty alebo popisu podrž prst na hodnote.\nPre načítanie fotky podrž prst na fotke.")){
+            Section(header: Text("Pre zmenu hodnoty alebo popisu 2x tukni na hodnotu.\nPre načítanie fotky 2x tukni na fotku.")){
                 ForEach(photos, id:\.self) { photo in
                     HStack{
                         ImageView(photo: photo)
-                            .onLongPressGesture {
+                            .highPriorityGesture(TapGesture(count: 2) .onEnded {
                                 if !photo.local {
                                     getZipPhotos()
                                     refresh.toggle()
                                 }
-                            }
+                            })
                         Divider()
                         VStack(alignment: .center) {
                             Text("Hodnota")
@@ -115,12 +115,12 @@ struct PhotosView: View {
                             Spacer()
                             Text("Veľkosť terča")
                             Text("\(photo.targetDiameter, specifier: "%.2f")")
-                        }.onLongPressGesture {
+                        }.highPriorityGesture(TapGesture(count: 2).onEnded {
                             guard locked != true else { return }
                             self.edit.toggle()
                             newValue = String(photo.value)
                             editingPhoto = photo
-                        }
+                        })
                     }
                 }.onDelete(perform: deletePhoto)
             }
