@@ -16,22 +16,28 @@ public func printError(from: String, message: String){
 
 extension Proto {
     func disabled() -> Bool {
-        if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() {
+        if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() && workflow.filled() {
             return false
         }
         return true
     }
 }
 
+extension Workflow {
+    func filled() -> Bool {
+        return !name.isEmpty
+    }
+}
+
 extension Material {
     func filled() -> Bool {
-        return !material.isEmpty
+        return !(material.isEmpty || manufacturer.isEmpty)
     }
 }
 
 extension MyMethod {
     func filled() -> Bool {
-        return !(name.isEmpty || requestedValue <= 0.0)
+        return !(name.isEmpty || type.isEmpty || monitoredDimension.isEmpty || requestedValue <= 0.0)
     }
 }
 
@@ -49,12 +55,14 @@ extension Construction {
 
 extension Company {
     func filled() -> Bool {
-        return !(ico <= 0 || dic <= 0 || name.isEmpty || address.isEmpty)
+        return !(ico <= 0 || name.isEmpty || address.isEmpty)
     }
 }
 
+// MARK: - ProtocolView
 extension ProtocolView {
     func createNew() {
+        if proto.creationDate == nil { proto.creationDate = Date() }
         self.document = Document(protoID: proto.id, proto: proto)
         guard let document = document else { printError(from: "protoView-document", message: "Document is nil"); return }
         // crate new document including protocol
@@ -140,6 +148,17 @@ extension ProtocolView {
         }
     }
     
+    func removeLocalZIPsExpectLast() {
+        // get all outputs with proto.id
+        let outputs = allOutputs.filter{ $0.protoID == proto.id }
+        for output in outputs {
+            guard output.internalID != proto.internalID else { continue } // do not delete last zip file
+            _ = output.deleteZIPFromDisk()
+            Cloud.shared.modifyOnCloud(output: output)
+        }
+    }
+    
+    // TODO: If cannot create remove
     func createOutput(creatingOutput: Binding<Bool>) {
         // increment internalID because we creating new output
         self.proto.internalID = proto.internalID + 1
@@ -150,26 +169,27 @@ extension ProtocolView {
         creatingOutput.wrappedValue = true
         modify(afterModified: {
             guard let zipURL = createPhotosZIP(protoID: proto.id) else { return }
-//            guard let pdfURL = createProtoPDF(protoID: protoID) else { return }
+            guard let pdfURL = createProtoPDF(proto: proto, photos: photos) else { return }
+            // if cloud save successfull create output archive
+            let outArch = OutputArchive(context: self.moc)
             // save outputs on cloud
-            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, zipURL: zipURL){ recordID in
-                // if cloud save successfull create output archive
-                let outArch = OutputArchive(context: self.moc)
-                outArch.fill(recordID: recordID, protoID: proto.id, internalID: proto.internalID, zipExist: true, pdfExist: false) //MARK: TODO false
+            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, zipURL: zipURL, pdfURL: pdfURL){ recordID in
+                outArch.recordID = recordID
                 moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
                 creatingOutput.wrappedValue = false
             }
+            outArch.fill(protoID: proto.id, internalID: proto.internalID, zipExist: true, pdfExist: true)
+            moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
         })
         return
     }
     
-    private func createProtoPDF(protoID: Int) -> URL? {
-        // MARK: TODO: createProtoPDF
-        print("Warning: Create protocol PDF")
-        return nil
-            
-//        guard let outputURL = Dirs.shared.getSpecificOutputDir(protoID: protoID) else { return }
-        // create PDF here
+    private func createProtoPDF(proto: Proto, photos: [MyPhoto]) -> URL? {
+        let pdfCreator = PDF()
+        let pdfData = pdfCreator.createPDF(uiimage: nil, proto: proto, photos: photos)
+        guard let pdfURL = Dirs.shared.getPdfURL(protoID: proto.id, internalID: proto.internalID) else { return nil }
+        FileManager.default.createFile(atPath: pdfURL.path, contents: pdfData, attributes: nil)
+        return pdfURL
     }
     
     private func createPhotosZIP(protoID: Int) -> URL? {
@@ -210,6 +230,7 @@ extension ProtocolView {
     }
 }
 
+// MARK: - Filtred
 extension Filtred {
     func remove(at offSets: IndexSet) {
         for index in offSets {
@@ -248,9 +269,9 @@ extension Filtred {
             } else {
                 _ = output.deleteFromDisk()
             }
+            moc.delete(output)
         }
         _ = Dirs.shared.remove(at: Dirs.shared.getProtocolOutputDir(protoID: Int(protoID)))
-
     }
     
     private func removeDocument(protoID: Int){
@@ -279,6 +300,7 @@ extension Filtred {
     }
 }
 
+// MARK: - UserDefaults
 extension UserDefaults {
     var serverChangeToken: CKServerChangeToken? {
         get {
@@ -298,8 +320,29 @@ extension UserDefaults {
             }
         }
     }
+    
+    var creator: Company? {
+        get {
+            guard let data = self.value(forKey: "creator") as? Data else { return nil }
+            guard let company = try? JSONDecoder().decode(Company.self, from: data) else { return nil }
+            return company
+        }
+        
+        set {
+            if let company = newValue {
+                guard let data = try? JSONEncoder().encode(company) else {
+                    self.removeObject(forKey: "creator")
+                    return
+                }
+                self.setValue(data, forKey: "creator")
+            } else {
+                self.removeObject(forKey: "creator")
+            }
+        }
+    }
 }
 
+// MARK: - NSManagedObjectContext
 extension NSManagedObjectContext {
     public func trySave(savingFrom: String, errorFrom: String, error message: String){
         print("Saving from: \(savingFrom)\n")
@@ -313,7 +356,7 @@ extension NSManagedObjectContext {
     }
 }
 
-
+// MARK: - PhotosView
 extension PhotosView {
     func actionSheet() -> ActionSheet {
         if UIImagePickerController.isSourceTypeAvailable(.camera) {

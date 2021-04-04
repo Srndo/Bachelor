@@ -10,6 +10,10 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.managedObjectContext) var moc
     @State private var selection: Int = 0
+    @State private var show: Bool = false
+    @State private var creator: Company = Company()
+    @State private var ico: String = ""
+    @State private var dic: String = ""
     var body: some View {
         TabView{
             NavigationView{
@@ -37,12 +41,17 @@ struct ContentView: View {
             }
             .tag(1)
         }
-        // remove directories with output and images after delete protocol 
-        // on first run show sheet and insert into sheet "objednavatela" (Nazov, adresa, ico, dic)
+        .sheet(isPresented: $show) {
+            CreatorView(show: $show)
+        }
+        .onAppear{
+            if UserDefaults.standard.creator == nil {
+                show.toggle()
+            }
+        }
         // if user wanna change "objednavatela" let some button in toolbar
-        // priemer terca, MyPhoto -> popis meraneho miesta
-        // klima
-        // metoda -> sledovana velicina
+        // image for logo in protocol
+        // clima
     }
 }
 
