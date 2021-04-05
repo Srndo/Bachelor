@@ -6,10 +6,35 @@
 //  Copyright © 2020 Simon Sestak. All rights reserved.
 //
 
-import CoreData
 import SwiftUI
+import PhotosUI
 
-class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var isShow: Bool
+    @Binding var photos: [MyPhoto]
+    @Binding var lastPhotoIndex: Int
+    var protoID: Int
+    
+    func makeCoordinator() -> ImagePickerCoordinator {
+        return ImagePickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex)
+    }
+    
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        config.selectionLimit = 0
+        config.preferredAssetRepresentationMode = .current
+        
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+}
+
+class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
     @Binding var index: Int
@@ -22,30 +47,36 @@ class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
         self.protoID = protoID
     }
     
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        DispatchQueue.global().async {
-            guard let uiimage = info[.originalImage] as? UIImage else { return }
-            if let cgImage = uiimage.cgImage {
-                var dic = [Int:CGImage]()
-                self.index = self.index + 1
-                dic[self.index] = cgImage
-                TextRecognizer().regognize(from: dic) { recognized in
-                    self.createMyPhoto(uiimage: uiimage, recognized:  recognized)
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        for photo in results {
+            if photo.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                photo.itemProvider.loadObject(ofClass: UIImage.self) { image, err in
+                    guard let image = image as? UIImage else {
+                        printError(from: "Image Picker", message: err?.localizedDescription ?? "")
+                        return
+                    }
+                    if let cgimage = image.cgImage{
+                        DispatchQueue.global().async {
+                            var dic = [Int:CGImage]()
+                            dic[self.index] = cgimage
+                            TextRecognizer().regognize(from: dic) { recognized in
+                                self.createMyPhoto(uiimage: image, recognized:  recognized)
+                            }
+                        }
+                    } else {
+                        printError(from: "Image picker", message: "Cannot convert UIImage to CGImage")
+                        self.createMyPhoto(uiimage: image)
+                    }
                 }
-            } else {
-                printError(from: "image picker", message: "Cannot make auto recognition of value.")
-                self.createMyPhoto(uiimage: uiimage)
             }
         }
-        isShow = false
-    }
-    
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-        isShow = false
+        isShow.toggle()
     }
     
     private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
+        print(self.index)
+        self.index += 1
         photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized), diameter: 50.0)
         DispatchQueue.main.async {
             self.photos.append(photo)
@@ -57,29 +88,5 @@ class ImagePickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
         guard let valString = recognized[name] else { return -1.0 }
         guard let value = Double(valString) else { return -1.0 }
         return value
-    }
-}
-
-struct ImagePicker: UIViewControllerRepresentable{
-    @Binding var isShow: Bool
-    @Binding var photos: [MyPhoto]
-    @Binding var lastPhotoIndex: Int
-    var protoID: Int
-    
-    var source: UIImagePickerController.SourceType
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {
-    }
-    
-    func makeCoordinator() -> ImagePickerCoordinator {
-        return ImagePickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex)
-    }
-    
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.allowsEditing = false
-        picker.sourceType = source
-        picker.delegate = context.coordinator
-        return picker
     }
 }

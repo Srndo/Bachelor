@@ -91,7 +91,11 @@ struct PhotosView: View {
                     actionSheet()
                 }
                 .sheet(isPresented: $showPicker){
-                    ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
+                    if source == UIImagePickerController.SourceType.photoLibrary {
+                        ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID)
+                    } else {
+                        PhotoPicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
+                    }
                 }
             }
             
