@@ -16,13 +16,13 @@ extension MyPhoto {
         return NSFetchRequest<MyPhoto>(entityName: "MyPhoto")
     }
 
-    @NSManaged public var local: Bool
-    @NSManaged public var protoID: Int16
-    @NSManaged public var name: Int16
-    @NSManaged public var value: Double
-    @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var descriptionOfPlace: String
+    @NSManaged public var local: Bool
+    @NSManaged public var name: Int16
+    @NSManaged public var protoID: Int16
+    @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var targetDiameter: Double
+    @NSManaged public var value: Double
     
     func getPhotoPath() -> URL? {
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(protoID)) else { return nil }

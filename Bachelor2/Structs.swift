@@ -82,7 +82,7 @@ struct Proto: Codable, Equatable {
     
     var id: Int
     var creationDate: Date?
-    var info: String = ""
+    var info: String = "Popis / vyhodnotenie protokolu"
     var internalID: Int = 0
     var clima: Clima = Clima()
     var client: Company = Company()

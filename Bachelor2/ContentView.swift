@@ -11,9 +11,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) var moc
     @State private var selection: Int = 0
     @State private var show: Bool = false
-    @State private var creator: Company = Company()
-    @State private var ico: String = ""
-    @State private var dic: String = ""
+    
     var body: some View {
         TabView{
             NavigationView{

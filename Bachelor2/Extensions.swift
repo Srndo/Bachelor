@@ -204,7 +204,7 @@ extension ProtocolView {
     
     private func createProtoPDF(proto: Proto, photos: [MyPhoto]) -> URL? {
         let pdfCreator = PDF()
-        let pdfData = pdfCreator.createPDF(uiimage: nil, proto: proto, photos: photos)
+        let pdfData = pdfCreator.createPDF(proto: proto, photos: photos)
         guard let pdfURL = Dirs.shared.getPdfURL(protoID: proto.id, internalID: proto.internalID) else { return nil }
         FileManager.default.createFile(atPath: pdfURL.path, contents: pdfData, attributes: nil)
         return pdfURL
@@ -347,6 +347,26 @@ extension UserDefaults {
                 self.setValue(data, forKey: "creator")
             } else {
                 self.removeObject(forKey: "creator")
+            }
+        }
+    }
+    
+    var logo: UIImage? {
+        get {
+            guard let data = self.value(forKey: "logo") as? Data else { return nil }
+            guard let logo = UIImage(data: data) else { return nil }
+            return logo
+        }
+        
+        set {
+            if let logo = newValue {
+                guard let data = logo.jpegData(compressionQuality: 0.1) else {
+                    self.removeObject(forKey: "logo")
+                    return
+                }
+                self.setValue(data, forKey: "logo")
+            } else {
+                self.removeObject(forKey: "logo")
             }
         }
     }

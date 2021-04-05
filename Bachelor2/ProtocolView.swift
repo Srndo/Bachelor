@@ -122,10 +122,24 @@ struct ProtocolView: View {
                 ClimaView(protoClima: $proto.clima, locked: $locked)
                     .disabled(locked)
             }.foregroundColor(proto.clima.filled() ? .green : .red)
-
-            DateView(proto: $proto, locked: $locked)
             
-            PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked)
+            DropDown(header: "Popis") {
+                Group {
+                    TextEditor(text: $proto.info)
+                        .foregroundColor(proto.info == "Popis / vyhodnotenie protokolu" ? .gray : .black)
+                        .onTapGesture {
+                        if proto.info == "Popis / vyhodnotenie protokolu" {
+                            proto.info = ""
+                        }
+                    }
+                }.disabled(locked)
+            }.foregroundColor(!proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" ? .green : .red )
+
+            Group { // without group causing Error: Extra argument in call (prob. SwiftUI bug on "big view")
+                DateView(proto: $proto, locked: $locked)
+                
+                PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked)
+            }
             
                 if protoID == -1 {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {

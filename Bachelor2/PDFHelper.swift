@@ -75,10 +75,10 @@ class PDF {
         return AnyView(PDFKitView(data: data))
     }
     
-    func createPDF(uiimage: UIImage?, proto: Proto, photos: [MyPhoto]) -> Data {
+    func createPDF(proto: Proto, photos: [MyPhoto]) -> Data {
         return renderer.pdfData { (context) in
             context.beginPage()
-            let logoCoords = addLogo(image: uiimage)
+            let logoCoords = addLogo()
             createTitle(center: logoCoords.center, bottom: logoCoords.bottom)
             
             // start at end of 3th col and at fixed height 30 (optimalized)
@@ -110,7 +110,13 @@ class PDF {
             yForAntoherLine += createRowOfThirds(first: dateString,
                                                  second: "\(proto.construction.address)\n\(proto.construction.section)",
                                                  third: "\(proto.client.name)\n\(proto.client.address)\nIČO: \(proto.client.ico)\n" + (proto.client.dic > 0 ? "DIČ: \(proto.client.dic)" : ""),
-                                                 y: yForAntoherLine) + 30 // + padding
+                                                 y: yForAntoherLine)
+            if !proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" {
+                yForAntoherLine += addText(startAt: 30, y: yForAntoherLine, width: colWidth, aligment: .left, bold: true, body: "Vyhodnotenie:")
+                yForAntoherLine += addText(startAt: 40, y: yForAntoherLine, width: colWidth * 3, aligment: .left, bold: false, body: "\(proto.info)")
+            }
+            
+            yForAntoherLine += 30 // + padding before table
             
             var yRow = tableRowTitle(pageRect, y: yForAntoherLine)
 
@@ -156,11 +162,11 @@ class PDF {
         formattedTitle.draw(in: titleStringRect)
     }
     
-    private func addLogo(image: UIImage?) -> (bottom: CGFloat, center: CGFloat) {
-        guard let image = UIImage(systemName: "photo") else { return (0, 0) }
-//        guard let image = image else { return (0,0) }
+    private func addLogo() -> (bottom: CGFloat, center: CGFloat) {
         let maxHeight = pageRect.height * 0.1
         let maxWidth = pageRect.width * 0.2
+        
+        guard let image = UserDefaults.standard.logo else { return (maxHeight, maxHeight / 2)}
         
         let aspectWidth = maxWidth / image.size.width
         let aspectHeight = maxHeight / image.size.height
@@ -169,11 +175,11 @@ class PDF {
         let scaledWidth = image.size.width * aspectRatio
         let scaledHeight = image.size.height * aspectRatio
         
-        let imageRect = CGRect(x: 10, y: 10, width: scaledWidth, height: scaledHeight)
+        let imageRect = CGRect(x: 20, y: 15, width: scaledWidth, height: scaledHeight)
         
         image.draw(in: imageRect)
         
-        let bottom = maxHeight < image.size.height ? image.size.height : maxHeight
+        let bottom = image.size.height < maxHeight ? image.size.height : maxHeight
         let center = bottom / 2
         return (bottom: bottom, center: center)
     }
