@@ -56,12 +56,10 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
                         return
                     }
                     if let cgimage = image.cgImage{
-                        DispatchQueue.global().async {
-                            var dic = [Int:CGImage]()
-                            dic[self.index] = cgimage
-                            TextRecognizer().regognize(from: dic) { recognized in
-                                self.createMyPhoto(uiimage: image, recognized:  recognized)
-                            }
+                        var dic = [Int:CGImage]()
+                        dic[self.index] = cgimage
+                        TextRecognizer().regognize(from: dic) { recognized in
+                            self.createMyPhoto(uiimage: image, recognized:  recognized)
                         }
                     } else {
                         printError(from: "Image picker", message: "Cannot convert UIImage to CGImage")
@@ -75,7 +73,6 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
     
     private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        print(self.index)
         self.index += 1
         photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized), diameter: 50.0)
         DispatchQueue.main.async {
