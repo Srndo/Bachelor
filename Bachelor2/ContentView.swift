@@ -27,7 +27,7 @@ struct ContentView: View {
             .tag(0)
             
             NavigationView{
-                newList()
+                ProtocolList()
                     .environment(\.managedObjectContext , moc)
                     .navigationTitle("List protokolov")
             }
@@ -47,9 +47,6 @@ struct ContentView: View {
                 show.toggle()
             }
         }
-        // if user wanna change "objednavatela" let some button in toolbar
-        // image for logo in protocol
-        // clima
     }
 }
 

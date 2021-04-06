@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct newList: View {
+struct ProtocolList: View {
     @Environment(\.managedObjectContext) var moc
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var DAs: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) var photos: FetchedResults<MyPhoto>
@@ -32,8 +32,6 @@ struct newList: View {
                     }
                 }
             }
-        }.onAppear{
-//            Cloud.shared.insertFetchChangeIntoCoreData(moc: moc, allPhotos: photos, allDAs: DAs, allOutputs: outputs)
         }
         .sheet(isPresented: $show) {
             setFilter(filter: $filter, keyname: $keyName)
@@ -50,6 +48,6 @@ struct newList: View {
 
 struct newList_Previews: PreviewProvider {
     static var previews: some View {
-        newList()
+        ProtocolList()
     }
 }

@@ -32,7 +32,7 @@ extension MyPhoto {
     func savePhotoToDisk(photo: Data?, protoID: Int, name: Int, value: Double, diameter: Double){
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         guard let data = photo else { printError(from: "save photo", message: "Data is nil"); return }
-        savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value, diameter: diameter)
+        _savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value, diameter: diameter)
 
     }
     
@@ -40,7 +40,7 @@ extension MyPhoto {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
             guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
             guard let data = photo.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert photo into data"); return }
-        savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter)
+        _savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter)
     }
     
     func deleteFromDisk() {
@@ -59,7 +59,7 @@ extension MyPhoto {
         }
     }
     
-    private func savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double) {
+    private func _savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double) {
         DispatchQueue.global().async {
             self.name = Int16(name)
             self.protoID = Int16(protoID)
