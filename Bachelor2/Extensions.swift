@@ -437,7 +437,6 @@ extension PhotosView {
             let name = path.deletingPathExtension().lastPathComponent
             names.append(name)
         }
-        print(names)
         photos.forEach{ photo in
             if names.contains(String(photo.name)) {
                 photo.local = true

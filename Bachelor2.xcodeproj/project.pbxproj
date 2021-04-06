@@ -16,7 +16,6 @@
 		F41B778A2603612D00EA507F /* Structs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41B77892603612C00EA507F /* Structs.swift */; };
 		F41B77902603716000EA507F /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41B778F2603716000EA507F /* Document.swift */; };
 		F4FD02522605F6D700B21D85 /* ProtocolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02512605F6D700B21D85 /* ProtocolView.swift */; };
-		F4FD02552605F6E400B21D85 /* ProtocolListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02542605F6E400B21D85 /* ProtocolListView.swift */; };
 		F4FD025C2609EA1700B21D85 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD025B2609EA1700B21D85 /* Extensions.swift */; };
 		F4FD02602609FB8B00B21D85 /* DateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD025F2609FB8B00B21D85 /* DateView.swift */; };
 		F4FD0266260A088100B21D85 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FD0265260A088100B21D85 /* CloudKit.framework */; };
@@ -29,17 +28,19 @@
 		F4FD02DF2615D5F900B21D85 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */; };
 		F4FD02E22615D60D00B21D85 /* DirsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E12615D60D00B21D85 /* DirsHelper.swift */; };
 		F4FD02E52615D61900B21D85 /* PhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E42615D61900B21D85 /* PhotoView.swift */; };
-		F4FD02E92615D62C00B21D85 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E72615D62C00B21D85 /* ImagePicker.swift */; };
+		F4FD02E92615D62C00B21D85 /* PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E72615D62C00B21D85 /* PhotoPicker.swift */; };
 		F4FD02EA2615D62C00B21D85 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02E82615D62C00B21D85 /* ImageLoader.swift */; };
 		F4FD02F22617140000B21D85 /* OutputArchive+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02F0261713FF00B21D85 /* OutputArchive+CoreDataClass.swift */; };
 		F4FD02F32617140000B21D85 /* OutputArchive+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02F1261713FF00B21D85 /* OutputArchive+CoreDataProperties.swift */; };
 		F4FD02F62617269900B21D85 /* VersionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02F52617269900B21D85 /* VersionsView.swift */; };
 		F4FD02F92617787300B21D85 /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02F82617787200B21D85 /* FilterView.swift */; };
-		F4FD02FC26177B4500B21D85 /* newList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02FB26177B4500B21D85 /* newList.swift */; };
+		F4FD02FC26177B4500B21D85 /* ProtocolList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02FB26177B4500B21D85 /* ProtocolList.swift */; };
 		F4FD03002618545000B21D85 /* PDFHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD02FF2618545000B21D85 /* PDFHelper.swift */; };
 		F4FD03042618D1F900B21D85 /* CreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD03032618D1F900B21D85 /* CreatorView.swift */; };
 		F4FD03072618D21700B21D85 /* DropDown.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD03062618D21700B21D85 /* DropDown.swift */; };
 		F4FD030A261A034F00B21D85 /* ClimaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD0309261A034F00B21D85 /* ClimaView.swift */; };
+		F4FD030E261A193600B21D85 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD030D261A193600B21D85 /* ImagePicker.swift */; };
+		F4FD0313261B5BFF00B21D85 /* LogoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FD0312261B5BFF00B21D85 /* LogoPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,7 +55,6 @@
 		F41B77892603612C00EA507F /* Structs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Structs.swift; sourceTree = "<group>"; };
 		F41B778F2603716000EA507F /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
 		F4FD02512605F6D700B21D85 /* ProtocolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolView.swift; sourceTree = "<group>"; };
-		F4FD02542605F6E400B21D85 /* ProtocolListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolListView.swift; sourceTree = "<group>"; };
 		F4FD025B2609EA1700B21D85 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		F4FD025F2609FB8B00B21D85 /* DateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateView.swift; sourceTree = "<group>"; };
 		F4FD0262260A087A00B21D85 /* Bachelor2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Bachelor2.entitlements; sourceTree = "<group>"; };
@@ -67,17 +67,19 @@
 		F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
 		F4FD02E12615D60D00B21D85 /* DirsHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirsHelper.swift; sourceTree = "<group>"; };
 		F4FD02E42615D61900B21D85 /* PhotoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoView.swift; sourceTree = "<group>"; };
-		F4FD02E72615D62C00B21D85 /* ImagePicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
+		F4FD02E72615D62C00B21D85 /* PhotoPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoPicker.swift; sourceTree = "<group>"; };
 		F4FD02E82615D62C00B21D85 /* ImageLoader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		F4FD02F0261713FF00B21D85 /* OutputArchive+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OutputArchive+CoreDataClass.swift"; sourceTree = SOURCE_ROOT; };
 		F4FD02F1261713FF00B21D85 /* OutputArchive+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OutputArchive+CoreDataProperties.swift"; sourceTree = SOURCE_ROOT; };
 		F4FD02F52617269900B21D85 /* VersionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionsView.swift; sourceTree = "<group>"; };
 		F4FD02F82617787200B21D85 /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
-		F4FD02FB26177B4500B21D85 /* newList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = newList.swift; sourceTree = "<group>"; };
+		F4FD02FB26177B4500B21D85 /* ProtocolList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolList.swift; sourceTree = "<group>"; };
 		F4FD02FF2618545000B21D85 /* PDFHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFHelper.swift; sourceTree = "<group>"; };
 		F4FD03032618D1F900B21D85 /* CreatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorView.swift; sourceTree = "<group>"; };
 		F4FD03062618D21700B21D85 /* DropDown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropDown.swift; sourceTree = "<group>"; };
 		F4FD0309261A034F00B21D85 /* ClimaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClimaView.swift; sourceTree = "<group>"; };
+		F4FD030D261A193600B21D85 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
+		F4FD0312261B5BFF00B21D85 /* LogoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoPicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,9 +121,9 @@
 				F4FD02BC2615D27B00B21D85 /* CoreData */,
 				F4FD02502605F6BE00B21D85 /* Structs */,
 				F4FD024F2605F6B300B21D85 /* Views */,
-				F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */,
 				F4FD02FE2618541F00B21D85 /* Classes */,
 				F4FD025B2609EA1700B21D85 /* Extensions.swift */,
+				F4FD02DE2615D5F900B21D85 /* TextRecognizer.swift */,
 				F41B777926035BAA00EA507F /* Assets.xcassets */,
 				F41B778126035BAA00EA507F /* Info.plist */,
 				F41B777626035BA900EA507F /* Bachelor2.xcdatamodeld */,
@@ -143,12 +145,11 @@
 			children = (
 				F41B777426035BA900EA507F /* ContentView.swift */,
 				F4FD02512605F6D700B21D85 /* ProtocolView.swift */,
-				F4FD02542605F6E400B21D85 /* ProtocolListView.swift */,
 				F4FD025F2609FB8B00B21D85 /* DateView.swift */,
 				F4FD02E42615D61900B21D85 /* PhotoView.swift */,
 				F4FD02F52617269900B21D85 /* VersionsView.swift */,
 				F4FD02F82617787200B21D85 /* FilterView.swift */,
-				F4FD02FB26177B4500B21D85 /* newList.swift */,
+				F4FD02FB26177B4500B21D85 /* ProtocolList.swift */,
 				F4FD03032618D1F900B21D85 /* CreatorView.swift */,
 				F4FD03062618D21700B21D85 /* DropDown.swift */,
 				F4FD0309261A034F00B21D85 /* ClimaView.swift */,
@@ -192,7 +193,9 @@
 				F4FD02D02615D5AC00B21D85 /* CloudHelper.swift */,
 				F4FD02E12615D60D00B21D85 /* DirsHelper.swift */,
 				F4FD02E82615D62C00B21D85 /* ImageLoader.swift */,
-				F4FD02E72615D62C00B21D85 /* ImagePicker.swift */,
+				F4FD02E72615D62C00B21D85 /* PhotoPicker.swift */,
+				F4FD030D261A193600B21D85 /* ImagePicker.swift */,
+				F4FD0312261B5BFF00B21D85 /* LogoPicker.swift */,
 				F4FD02FF2618545000B21D85 /* PDFHelper.swift */,
 			);
 			name = Classes;
@@ -279,22 +282,23 @@
 				F4FD030A261A034F00B21D85 /* ClimaView.swift in Sources */,
 				F4FD02602609FB8B00B21D85 /* DateView.swift in Sources */,
 				F4FD03002618545000B21D85 /* PDFHelper.swift in Sources */,
+				F4FD0313261B5BFF00B21D85 /* LogoPicker.swift in Sources */,
 				F4FD02F92617787300B21D85 /* FilterView.swift in Sources */,
 				F4FD02E52615D61900B21D85 /* PhotoView.swift in Sources */,
+				F4FD030E261A193600B21D85 /* ImagePicker.swift in Sources */,
 				F41B777826035BA900EA507F /* Bachelor2.xcdatamodeld in Sources */,
 				F41B777126035BA900EA507F /* AppDelegate.swift in Sources */,
 				F4FD02D82615D5C600B21D85 /* DatabaseArchive+CoreDataProperties.swift in Sources */,
 				F4FD02F62617269900B21D85 /* VersionsView.swift in Sources */,
-				F4FD02E92615D62C00B21D85 /* ImagePicker.swift in Sources */,
+				F4FD02E92615D62C00B21D85 /* PhotoPicker.swift in Sources */,
 				F4FD02C02615D2A700B21D85 /* MyPhoto+CoreDataProperties.swift in Sources */,
 				F4FD02F22617140000B21D85 /* OutputArchive+CoreDataClass.swift in Sources */,
 				F4FD03042618D1F900B21D85 /* CreatorView.swift in Sources */,
-				F4FD02552605F6E400B21D85 /* ProtocolListView.swift in Sources */,
 				F41B77902603716000EA507F /* Document.swift in Sources */,
 				F4FD02D12615D5AC00B21D85 /* CloudHelper.swift in Sources */,
 				F4FD025C2609EA1700B21D85 /* Extensions.swift in Sources */,
 				F4FD02F32617140000B21D85 /* OutputArchive+CoreDataProperties.swift in Sources */,
-				F4FD02FC26177B4500B21D85 /* newList.swift in Sources */,
+				F4FD02FC26177B4500B21D85 /* ProtocolList.swift in Sources */,
 				F41B777326035BA900EA507F /* SceneDelegate.swift in Sources */,
 				F4FD02DC2615D5E100B21D85 /* MyPhoto+CoreDataClass.swift in Sources */,
 				F4FD02DF2615D5F900B21D85 /* TextRecognizer.swift in Sources */,
