@@ -314,56 +314,6 @@ class Cloud {
         }
     }
     
-    // MARK: - Download photo
-    func downloadPhoto(photo: MyPhoto) {
-        guard let recordID = photo.recordID else { return }
-        db.fetch(withRecordID: recordID) { record, err in
-            if let err = err {
-                printError(from: "fetch photo from cloud", message: err.localizedDescription)
-                return
-            }
-            guard let record = record else { return }
-            
-            guard let protoID = record["protoID"] as? Int else {
-                printError(from: "cloud save photo", message: "ProtoID is nil")
-                return
-            }
-            
-            guard let value = record["value"] as? Double else {
-                printError(from: "cloud save photo", message: "Value of photo is nil")
-                return
-            }
-            
-            guard let name = record["name"] as? Int else {
-                printError(from: "cloud save photo", message: "Name of photo is nil")
-                return
-            }
-            
-            guard let diameter = record["diameter"] as? Double else {
-                printError(from: "cloud save photo", message: "Diameter is nil")
-                return
-            }
-            
-            guard let asset = record["photo"] as? CKAsset else {
-                printError(from: "cloud save photo", message: "Asset is missing")
-                return
-            }
-            
-            guard let photoURL = asset.fileURL else {
-                printError(from: "cloud save photo", message: "Photo URL is nil")
-                return
-            }
-            
-            guard let data = try? Data(contentsOf: photoURL) else {
-                printError(from: "cloud save photo", message: "Cannot create data from asset")
-                return
-            }
-            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value, diameter: diameter)
-            photo.local = true
-            self.modifyOnCloud(photo: photo) // save local -> true [on cloud]
-        }
-    }
-    
     // MARK: - Modify on cloud functions
     /**
      # Modify photo on cloud
