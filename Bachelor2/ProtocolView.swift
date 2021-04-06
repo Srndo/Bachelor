@@ -135,7 +135,7 @@ struct ProtocolView: View {
                 }.disabled(locked)
             }.foregroundColor(!proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" ? .green : .red )
 
-            Group { // without group causing Error: Extra argument in call (prob. SwiftUI bug on "big view")
+            Group { // without group causing Error: Extra argument in call (prob. SwiftUI bug on "big view" ? )
                 DateView(proto: $proto, locked: $locked)
                 
                 PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked)
@@ -145,17 +145,17 @@ struct ProtocolView: View {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
                         HStack {
                             Spacer()
-                            Button("Vytvor testing"){
+                            Button("Vytvor"){
                                 // for new proto create newID
                                 if proto.id == -1 {
                                     proto.id = Int(allDA.last?.protoID ?? 0) + 1
                                 }
-                                fillForTest(number: proto.id)
+//                                fillForTest(number: proto.id)
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
                             }
-//                            .disabled(proto.disabled())
+                            .disabled(proto.disabled())
                             .padding(8)
                             .background(proto.disabled() ? Color.gray : Color.blue)
                             .foregroundColor(.white)
@@ -210,7 +210,7 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-            printDB()
+//            printDB()
 //            clearDB()
             if protoID > -1 {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
