@@ -123,6 +123,8 @@ struct PhotosView: View {
                             guard locked != true else { return }
                             self.edit.toggle()
                             newValue = String(photo.value)
+                            newDesc = photo.descriptionOfPlace
+                            newDiameter = String(photo.targetDiameter)
                             editingPhoto = photo
                         })
                     }
@@ -153,6 +155,7 @@ struct PhotosView: View {
                         moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
                         Cloud.shared.modifyOnCloud(photo: photo)
                         edit.toggle()
+                        refresh.toggle()
                     }.disabled(editingPhoto == nil)
                 }
             }
