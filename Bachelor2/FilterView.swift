@@ -43,8 +43,8 @@ struct setFilter: View {
         Form{
             Section{
                 Picker("", selection: $keyname){
-                    Text("Názov").tag("client")
-                    Text("Adresa").tag("date")
+                    Text("Klient").tag("client")
+                    Text("Dátum").tag("date")
                     Text("Konštrukcia").tag("construction")
                     Text("Protokol ID").tag("protoID")
                 }.pickerStyle(SegmentedPickerStyle())
