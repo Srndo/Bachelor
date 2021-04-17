@@ -186,7 +186,7 @@ class PDF {
     
     private func createRowOfThirds(bold: Bool = false, first: String, second: String, third: String, y: CGFloat) -> CGFloat {
         // first col start at 10 (padding)
-        let firstThird = addText(startAt: 10, y: y, width: colWidth, bold: bold, body: first)
+        let firstThird = addText(startAt: 10, y: y, width: colWidth - 10, bold: bold, body: first)
         // second col start at end of width of first col
         let secondThird = addText(startAt: colWidth, y: y, width: colWidth, bold: bold, body: second)
         // third col start at end of width of second col
