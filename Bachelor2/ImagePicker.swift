@@ -56,25 +56,24 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
                         return
                     }
                     if let cgimage = image.cgImage{
-                        var dic = [Int:CGImage]()
-                        dic[self.index] = cgimage
-                        TextRecognizer().regognize(from: dic) { recognized in
-                            self.createMyPhoto(uiimage: image, recognized:  recognized)
+                        TextRecognizer.shared.recognize(name: self.index, image: cgimage) { (name, value) in
+                            self.createMyPhoto(uiimage: image, name: name, valueString: value)
                         }
                     } else {
                         printError(from: "Image picker", message: "Cannot convert UIImage to CGImage")
-                        self.createMyPhoto(uiimage: image)
+                        self.createMyPhoto(uiimage: image, name: self.index)
                     }
+                    self.index += 1
                 }
             }
         }
         isShow.toggle()
     }
     
-    private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
+    private func createMyPhoto(uiimage: UIImage, name: Int, valueString: String = "-1.0") {
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        self.index += 1
-        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized), diameter: 50.0)
+        let value = Double(valueString)
+        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0, diameter: 50.0)
         DispatchQueue.main.async {
             self.photos.append(photo)
         }
@@ -82,7 +81,7 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
     
     private func recognizedValue(name: Int, recognized: [Int:String]?) -> Double {
         guard let recognized = recognized else { return -1.0 }
-        guard let valString = recognized[name] else { return -1.0 }
+        guard let valString = recognized[name - 1] else { return -1.0 }
         guard let value = Double(valString) else { return -1.0 }
         return value
     }

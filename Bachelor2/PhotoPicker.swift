@@ -26,17 +26,15 @@ class PhotoPickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
         DispatchQueue.global().async {
             guard let uiimage = info[.originalImage] as? UIImage else { return }
             let rotatedImage = self.fixImageOrientation(uiimage)
-            if let cgImage = rotatedImage.cgImage {
-                var dic = [Int:CGImage]()
-                self.index = self.index + 1
-                dic[self.index] = cgImage
-                TextRecognizer().regognize(from: dic) { recognized in
-                    self.createMyPhoto(uiimage: uiimage, recognized:  recognized)
+            if let cgimage = rotatedImage.cgImage {
+                TextRecognizer.shared.recognize(name: self.index, image: cgimage) { (name, value) in
+                    self.createMyPhoto(uiimage: uiimage, name: name, valueString: value)
                 }
             } else {
                 printError(from: "image picker", message: "Cannot make auto recognition of value.")
-                self.createMyPhoto(uiimage: uiimage)
+                self.createMyPhoto(uiimage: uiimage, name: self.index)
             }
+            self.index = self.index + 1
         }
         isShow = false
     }
@@ -54,9 +52,10 @@ class PhotoPickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
         isShow = false
     }
     
-    private func createMyPhoto(uiimage: UIImage?, recognized: [Int:String]? = nil ) {
+    private func createMyPhoto(uiimage: UIImage, name: Int, valueString: String = "-1.0") {
         let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: self.index, value: self.recognizedValue(name: self.index, recognized: recognized), diameter: 50.0)
+        let value = Double(valueString)
+        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0, diameter: 50.0)
         DispatchQueue.main.async {
             self.photos.append(photo)
         }
