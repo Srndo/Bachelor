@@ -145,19 +145,19 @@ struct ProtocolView: View {
                     Section(header: Text(message).foregroundColor(message.contains("ERROR") ? .red : .green)) {
                         HStack {
                             Spacer()
-                            Button("Vytvor"){
+                            Button("Vytvor testing"){
                                 // for new proto create newID
                                 if proto.id == -1 {
                                     proto.id = Int(allDA.last?.protoID ?? 0) + 1
                                 }
-//                                fillForTest(number: proto.id)
+                                fillForTest(number: proto.id)
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
                             }
-                            .disabled(proto.disabled())
+//                            .disabled(proto.disabled())
                             .padding(8)
-                            .background(proto.disabled() ? Color.gray : Color.blue)
+//                            .background(proto.disabled() ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             Spacer()
@@ -210,11 +210,12 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-//            printDB()
+            printDB()
 //            clearDB()
             if protoID > -1 {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
+            setAirClima()
             openDocument()
         }
         .onDisappear{
@@ -233,7 +234,15 @@ struct ProtocolView: View {
         print("Outputs: \(allOutputs.count)")
         print("----------------")
     }
-
+    
+    private func setAirClima() {
+        // set clima only in new protocol
+        guard protoID == -1 else { return }
+        WeatherService.shared.loadWeatherData() { weather in
+            proto.clima.humAir = weather.humidity
+            proto.clima.tempAir = weather.temperature
+        }
+    }
     private func clearDB() {
         for photo in allPhotos {
             moc.delete(photo)
@@ -266,9 +275,7 @@ struct ProtocolView: View {
         proto.method.type = "Odtrhová skúška"
         proto.method.monitoredDimension = "odtrhová sila / odtrhové napätie"
         proto.workflow.name = "PP-67"
-        proto.clima.humAir = Double(number)
         proto.clima.humCon = Double(number)
-        proto.clima.tempAir = Double(number)
         proto.clima.tempCon = Double(number)
     }
 }

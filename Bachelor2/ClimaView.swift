@@ -70,14 +70,7 @@ struct ClimaView: View {
                     Text("%")
                 }
             }.onAppear{
-                if protoClima.tempAir.isZero && protoClima.humAir.isZero {
-                    WeatherService.shared.loadWeatherData() { weather in
-                        protoClima.humAir = weather.humidity
-                        protoClima.tempAir = weather.temperature
-                        tempAir = String(protoClima.tempAir)
-                        humAir = String(protoClima.humAir)
-                    }
-                } else {
+                if !protoClima.tempAir.isZero && !protoClima.humAir.isZero {
                     tempAir = String(protoClima.tempAir)
                     humAir = String(protoClima.humAir)
                 }
