@@ -28,7 +28,7 @@ struct ProtocolList: View {
                             Text(proto.construction)
                         }
                         Spacer()
-                        Text("\(proto.protoID)")
+                        Text("\(proto.protoID)" + showDate(date: proto.date))
                     }
                 }
             }
@@ -44,10 +44,8 @@ struct ProtocolList: View {
             }
         }
     }
-}
-
-struct newList_Previews: PreviewProvider {
-    static var previews: some View {
-        ProtocolList()
+    func showDate(date: Date?) -> String {
+        guard let date = date else { return ""}
+        return ":" + date.showYear()
     }
 }

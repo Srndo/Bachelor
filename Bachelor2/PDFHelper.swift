@@ -82,7 +82,7 @@ class PDF {
             createTitle(center: logoCoords.center, bottom: logoCoords.bottom)
             
             // start at end of 3th col and at fixed height 30 (optimalized)
-            var yForAntoherLine = addText(startAt: colWidth * 2 , y: 32, width: colWidth, height: logoCoords.bottom, bold: true, body: "Protokol o skúške číslo:\n\n \(proto.id)") + 40
+            var yForAntoherLine = addText(startAt: colWidth * 2 , y: 32, width: colWidth, height: logoCoords.bottom, bold: true, body: "Protokol o skúške číslo:\n\n \(proto.id):\(proto.creationDate.showYear())") + 40
             
             yForAntoherLine += createRowOfThirds(bold: true, first: "Druh skúšky:", second: "Stavba:", third: "Číslo dokumentu:", y: yForAntoherLine)
             yForAntoherLine += createRowOfThirds(first: proto.method.type, second: proto.construction.name, third: "\(proto.internalID)", y: yForAntoherLine) + 10 // + padding

@@ -476,3 +476,22 @@ extension PhotosView {
         }
     }
 }
+
+extension Optional where Wrapped == Date {
+    func showYear() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = ("yyyy")
+        if let date = self {
+            return formatter.string(from: date)
+        } else {
+            return Date().showYear()
+        }
+    }
+}
+extension Date {
+    func showYear() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = ("yyyy")
+        return formatter.string(from: self)
+    }
+}
