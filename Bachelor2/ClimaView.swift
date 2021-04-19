@@ -18,55 +18,74 @@ struct ClimaView: View {
     
     var body: some View {
         Group {
-            TextField("Vlhkosť ovzdušia [%]", text: $humAir)
-                .onChange(of: humAir) { value in
-                    guard let value = Double(value) else {
-                        humAir = ""
-                        return
-                    }
-                    protoClima.humAir = value
+            Section(header: Text("Ovzdušie").foregroundColor(.gray)) {
+                HStack{
+                    TextField("Teplota", text: $tempAir)
+                        .onChange(of: tempAir) { value in
+                            guard let value = Double(value) else {
+                                tempAir = ""
+                                return
+                            }
+                            protoClima.tempAir = value
+                        }
+                    Spacer()
+                    Text("°C")
                 }
-            TextField("Teplota ovzdušia [°C]", text: $tempAir)
-                .onChange(of: tempAir) { value in
-                    guard let value = Double(value) else {
-                        tempAir = ""
-                        return
-                    }
-                    protoClima.tempAir = value
+                HStack{
+                    TextField("Vlhkosť", text: $humAir)
+                        .onChange(of: humAir) { value in
+                            guard let value = Double(value) else {
+                                humAir = ""
+                                return
+                            }
+                            protoClima.humAir = value
+                        }
+                    Spacer()
+                    Text("%")
                 }
-            TextField("Vlhkosť konštrukcie [%]", text: $humCon)
-                .onChange(of: humCon) { value in
-                    guard let value = Double(value) else {
-                        humCon = ""
-                        return
-                    }
-                    protoClima.humCon = value
-                }
-            TextField("Teplota konštrukcie [°C]", text: $tempCon)
-                .onChange(of: tempCon) { value in
-                    guard let value = Double(value) else {
-                        tempCon = ""
-                        return
-                    }
-                    protoClima.tempCon = value
-                }
-            HStack{
-                Spacer()
-                Button("freemeteo.sk"){
-                    guard let url = URL(string: "https://freemeteo.sk/") else { return }
-                    openURL(url)
-                }
-                .padding(8)
-                .background(locked ? Color.gray : Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                Spacer()
             }
-        }.onAppear{
-            humAir = String(protoClima.humAir)
-            humCon = String(protoClima.humCon)
-            tempAir = String(protoClima.tempAir)
-            tempCon = String(protoClima.tempCon)
+            Section(header: Text("Konštrukcia").foregroundColor(.gray)) {
+                HStack{
+                    TextField("Teplota", text: $tempCon)
+                        .onChange(of: tempCon) { value in
+                            guard let value = Double(value) else {
+                                tempCon = ""
+                                return
+                            }
+                            protoClima.tempCon = value
+                        }
+                    Spacer()
+                    Text("°C")
+                }
+                HStack{
+                    TextField("Vlhkosť", text: $humCon)
+                        .onChange(of: humCon) { value in
+                            guard let value = Double(value) else {
+                                humCon = ""
+                                return
+                            }
+                            protoClima.humCon = value
+                        }
+                    Spacer()
+                    Text("%")
+                }
+            }.onAppear{
+                if protoClima.tempAir.isZero && protoClima.humAir.isZero {
+                    WeatherService.shared.loadWeatherData() { weather in
+                        protoClima.humAir = weather.humidity
+                        protoClima.tempAir = weather.temperature
+                        tempAir = String(protoClima.tempAir)
+                        humAir = String(protoClima.humAir)
+                    }
+                } else {
+                    tempAir = String(protoClima.tempAir)
+                    humAir = String(protoClima.humAir)
+                }
+                if !protoClima.humCon.isZero && !protoClima.tempCon.isZero {
+                    humCon = String(protoClima.humCon)
+                    tempCon = String(protoClima.tempCon)
+                }
+            }
         }
     }
 }
