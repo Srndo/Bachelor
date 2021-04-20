@@ -55,6 +55,10 @@ class Document: UIDocument {
         }
     }
     
+    func exists() -> Bool {
+        return Dirs.shared.fileExists(at: documentPath.path)
+    }
+    
     func modify(new proto: Proto, afterSave: @escaping () -> ()) {
         self.proto = proto
         self.updateChangeCount(.done)
@@ -68,7 +72,7 @@ class Document: UIDocument {
         }
     }
     
-    func createNew(completition: (() -> ())? ) {
+    func createNew(completition: (() -> ())? = nil) {
         guard let proto = proto else { printError(from: "document save", message: "Protocol is nil"); return }
         
         self.save(to: documentPath, for: .forCreating) { res in
