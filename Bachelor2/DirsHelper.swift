@@ -20,6 +20,9 @@ class Dirs {
         return docURL
     }
     
+    func fileExists(at path: String) -> Bool {
+        return fileManager.fileExists(atPath: path)
+    }
     /**
         Return urls like .../Documents/Images
      */
@@ -39,7 +42,7 @@ class Dirs {
     }
 
     /**
-        Return urls like .../Output
+        Return urls like .../Documents/Output
      */
     func getOutputDir() -> URL? {
         guard let docURL = getDocumentsDir() else { return nil }
@@ -79,7 +82,7 @@ class Dirs {
     }
     
     func createDir(at path: String) -> Bool {
-        if !fileManager.fileExists(atPath: path) {
+        if !fileExists(at: path) {
             do {
                 try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
             } catch {
