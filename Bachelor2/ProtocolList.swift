@@ -15,7 +15,7 @@ struct ProtocolList: View {
     
     @State var filter:String = ""
     @State var keyName:String = "client"
-    @State private var show: Bool = false
+    @State var activeSheet: ActiveSheet?
     
     var body: some View {
         Form {
@@ -33,13 +33,23 @@ struct ProtocolList: View {
                 }
             }
         }
-        .sheet(isPresented: $show) {
-            setFilter(filter: $filter, keyname: $keyName)
+        .sheet(item: $activeSheet) { id in
+            switch id {
+                case .first:
+                    CreatorView(activeSheet: $activeSheet)
+                case .second:
+                    setFilter(filter: $filter, keyname: $keyName)
+            }
         }
         .toolbar{
-            ToolbarItem{
-                Button(action: {show.toggle()}){
-                    Image(systemName: "magnifyingglass.circle")
+            ToolbarItem(placement: .navigationBarTrailing){
+                Button(action: {activeSheet = .first}){
+                    UserDefaults.standard.creator != nil ?  Image(systemName: "bag.fill") : Image(systemName: "bag")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {activeSheet = .second}){
+                    Image(systemName: "magnifyingglass")
                 }
             }
         }

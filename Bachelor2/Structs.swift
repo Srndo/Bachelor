@@ -95,3 +95,11 @@ struct Proto: Codable, Equatable {
     var lastPhotoIndex: Int = 0
     var locked: Bool = false
 }
+
+enum ActiveSheet: Identifiable {
+    case first, second
+    
+    var id: Int {
+        hashValue
+    }
+}

@@ -29,7 +29,7 @@ struct ProtocolView: View {
     @State var locked: Bool = false
     @State private var creatingOutput: Bool = false
     
-    @State private var showSheet: Bool = false
+    @State private var activeSheet: ActiveSheet?
     @State private var creator: Company = Company()
     
     init(protoID: Int? = nil){
@@ -138,7 +138,7 @@ struct ProtocolView: View {
             Group { // without group causing Error: Extra argument in call (prob. SwiftUI bug on "big view" ? )
                 DateView(proto: $proto, locked: $locked)
                 
-                PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked)
+                PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked).environment(\.managedObjectContext , moc)
             }
             
                 if protoID == -1 {
@@ -157,7 +157,7 @@ struct ProtocolView: View {
                             }
 //                            .disabled(proto.disabled())
                             .padding(8)
-//                            .background(proto.disabled() ? Color.gray : Color.blue)
+                            .background(proto.disabled() ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             Spacer()
@@ -168,7 +168,7 @@ struct ProtocolView: View {
                         HStack{
                             Button("Vytvor výstup") {
                                 guard UserDefaults.standard.creator != nil else  {
-                                    showSheet.toggle()
+                                    activeSheet = .first
                                     return
                                 }
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
@@ -222,14 +222,17 @@ struct ProtocolView: View {
             self.message = ""
             modify(afterModified: closeDocument)
         }
-        .sheet(isPresented: $showSheet){
-            CreatorView(show: $showSheet)
+        .sheet(item: $activeSheet){ id in
+            if id == .first {
+                CreatorView(activeSheet: $activeSheet)
+            }
         }
     }
     
     private func printDB() {
         print("----------------")
         print("Photos: \(allPhotos.count)")
+        allPhotos.forEach{ photo in print(photo.protoID)}
         print("DAs: \(allDA.count)")
         print("Outputs: \(allOutputs.count)")
         print("----------------")

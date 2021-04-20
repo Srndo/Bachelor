@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.managedObjectContext) var moc
     @State private var selection: Int = 0
-    @State private var show: Bool = false
+    @State private var activeSheet: ActiveSheet?
     
     var body: some View {
         TabView{
@@ -39,19 +39,15 @@ struct ContentView: View {
             }
             .tag(1)
         }
-        .sheet(isPresented: $show) {
-            CreatorView(show: $show)
+        .sheet(item: $activeSheet) { id in
+            if id == .first {
+                CreatorView(activeSheet: $activeSheet)
+            }
         }
         .onAppear{
             if UserDefaults.standard.creator == nil {
-                show.toggle()
+                activeSheet = .first
             }
         }
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
     }
 }

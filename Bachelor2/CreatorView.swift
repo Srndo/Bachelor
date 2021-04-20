@@ -12,8 +12,9 @@ struct CreatorView: View {
     @State private var placeholderIco: String = "*IČO firmy"
     @State private var creator: Company = Company()
     @State private var logo: UIImage? = nil
-    @Binding var show: Bool
+    @Binding var activeSheet: ActiveSheet?
     @State private var showImagePicker: Bool = false
+    
     var body: some View {
         Form {
             Section {
@@ -52,7 +53,7 @@ struct CreatorView: View {
                 HStack{
                     Spacer()
                     Button("Ulož"){
-                        show.toggle()
+                        activeSheet = nil
                     }
                     .padding(8)
                     .background(Color.blue)
@@ -70,6 +71,13 @@ struct CreatorView: View {
                 UserDefaults.standard.creator = creator
             }
             UserDefaults.standard.logo = logo
+        }
+        .onAppear{
+            guard let creator = UserDefaults.standard.creator else { return }
+            self.creator = creator
+            self.ico = String(creator.ico)
+            guard let logo = UserDefaults.standard.logo else { return }
+            self.logo = logo
         }
     }
 }
