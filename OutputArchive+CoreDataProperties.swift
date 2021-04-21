@@ -22,6 +22,16 @@ extension OutputArchive {
     @NSManaged public var protoID: Int16
     @NSManaged public var internalID: Int16
     
+    func getPdfURL() -> URL? {
+        guard pdf == true else { return nil }
+        return Dirs.shared.getPdfURL(protoID: Int(protoID), internalID: Int(internalID))
+    }
+    
+    func getZipURL() -> URL? {
+        guard zip == true else { return nil }
+        return Dirs.shared.getZipURL(protoID: Int(protoID), internalID: Int(internalID))
+    }
+    
     func fill(recordID: CKRecord.ID? = nil, protoID: Int, internalID: Int, zipExist: Bool, pdfExist: Bool){
         self.recordID = recordID
         self.protoID = Int16(protoID)

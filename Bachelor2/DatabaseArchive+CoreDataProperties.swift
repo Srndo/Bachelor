@@ -23,6 +23,18 @@ extension DatabaseArchive {
     @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var construction: String
     
+    func getProto(completion: @escaping (String?) -> ()) {
+        let document = Document(protoID: Int(protoID))
+        document.open(){ res in
+            if res {
+                let encoded = try? document.contents(forType: "String") as? String
+                completion(encoded)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+    
     func create(encodedProto: String, local: Bool, recordID: CKRecord.ID? = nil) -> Proto? {
         guard let proto = decodeProto(encodedProto: encodedProto) else { return nil }
         let document = Document(protoID: proto.id, proto: proto)
