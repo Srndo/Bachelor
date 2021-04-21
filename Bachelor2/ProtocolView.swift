@@ -138,7 +138,8 @@ struct ProtocolView: View {
             Group { // struct allow only 10 views
                 DateView(proto: $proto, locked: $locked)
                 
-                PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked).environment(\.managedObjectContext , moc)
+                PhotoView(protoID: proto.id, internalID: proto.internalID, photos: $photos, lastPhotoIndex: $lastPhotoNumber, locked: $creatingOutput)
+                    .environment(\.managedObjectContext , moc)
             }
             
                 if protoID == -1 {
@@ -212,7 +213,7 @@ struct ProtocolView: View {
         .onAppear{
             printDB()
 //            clearDB()
-            if protoID > -1 {
+            if protoID > -1  && photos.isEmpty {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
             setAirClima()

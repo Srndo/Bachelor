@@ -11,25 +11,26 @@ struct PhotoView: View {
     @Environment(\.managedObjectContext) var moc
     
     @State private var show: Bool = false
-    @State private var photos: [MyPhoto]
-    private var locked: Binding<Bool>
+    @Binding var photos: [MyPhoto]
+    @Binding var locked: Bool
     var lastPhotoIndex: Binding<Int>
     private var protoID: Int
     private var internalID: Int
     
     
-    init(protoID: Int, internalID: Int, photos: [MyPhoto], lastPhotoIndex: Binding<Int>, locked: Binding<Bool>){
+    init(protoID: Int, internalID: Int, photos: Binding<[MyPhoto]>, lastPhotoIndex: Binding<Int>, locked: Binding<Bool> ){
         self.protoID = protoID
         self.internalID = internalID
         self.lastPhotoIndex = lastPhotoIndex
-        _photos = State(initialValue: photos)
-        self.locked = locked
+        _photos = photos
+        _locked = locked
     }
     
     var body: some View {
         ZStack{
-            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID, internalID: internalID, locked: locked)
-                            .environment(\.managedObjectContext , moc)){
+            NavigationLink(destination: PhotosView(photos: $photos, lastPhotoIndex: lastPhotoIndex, protoID: protoID, internalID: internalID, locked: $locked)
+                            .environment(\.managedObjectContext , moc)
+            ){
                 EmptyView()
             }
             .hidden()
@@ -52,7 +53,7 @@ struct PhotoView: View {
 
 struct PhotosView: View {
     @Environment(\.managedObjectContext) var moc
-
+    
     @State private var actionShow: Bool = false
     @State var showPicker: Bool = false
     @State var source: UIImagePickerController.SourceType = .photoLibrary
@@ -89,9 +90,9 @@ struct PhotosView: View {
                 }
                 .sheet(isPresented: $showPicker){
                     if source == UIImagePickerController.SourceType.photoLibrary {
-                        ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID)
+                        ImagePicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, locked: $locked, protoID: protoID)
                     } else {
-                        PhotoPicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, protoID: protoID, source: source)
+                        PhotoPicker(isShow: $showPicker, photos: $photos, lastPhotoIndex: $lastPhotoIndex, locked: $locked, protoID: protoID, source: source)
                     }
                 }
             }
@@ -127,17 +128,6 @@ struct PhotosView: View {
         }
         .sheet(isPresented: $edit) {
             EditingView(editingPhoto: $editingPhoto, show: $edit).environment(\.managedObjectContext , moc)
-        }
-        .onDisappear{
-            // MARK: Cloud save
-            for photo in photos {
-                guard photo.managedObjectContext == nil else { continue }
-                moc.insert(photo)
-                Cloud.shared.saveToCloud(recordType: Cloud.RecordType.photos, photo: photo){ recordID in
-                    photo.recordID = recordID
-                }
-            }
-            moc.trySave(savingFrom: "photo disappear", errorFrom: "photoView", error: "Cannot saved photos")
         }
     }
 }
