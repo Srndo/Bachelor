@@ -196,8 +196,8 @@
 		F4FD02FE2618541F00B21D85 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				F41B778F2603716000EA507F /* Document.swift */,
 				F4FD02D02615D5AC00B21D85 /* CloudHelper.swift */,
+				F41B778F2603716000EA507F /* Document.swift */,
 				F4FD02E12615D60D00B21D85 /* DirsHelper.swift */,
 				F4FD02E82615D62C00B21D85 /* ImageLoader.swift */,
 				F4FD02E72615D62C00B21D85 /* PhotoPicker.swift */,
