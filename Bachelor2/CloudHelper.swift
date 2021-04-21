@@ -144,6 +144,7 @@ class Cloud {
                 self.saveRecords(toSave: toSave)
                 self.fetching = false
                 self.insertFetchChangeIntoCoreData()
+                self.checkIfEveryThingIsOnCloud()
             }
         }
         
@@ -248,7 +249,7 @@ class Cloud {
      - Parameter pathTo: URL to ZIP file
      - Parameter completition: Return CKRecord if record was saved else nil
      */
-    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, zipURL: URL, pdfURL: URL, completition: @escaping (CKRecord.ID?) -> ()){
+    func saveToCloud(recordType: CKRecord.RecordType, protoID: Int, internalID: Int, zipURL: URL?, pdfURL: URL?, completition: @escaping (CKRecord.ID?) -> ()){
         guard recordType == RecordType.outputs else {
             printError(from: "save to cloud [zip]", message: "Record type is not correct")
             completition(nil)
@@ -259,13 +260,20 @@ class Cloud {
         record["protoID"] = protoID as CKRecordValue
         record["internalID"] = internalID as CKRecordValue
         
-        let zip = CKAsset(fileURL: zipURL)
-        record["zip"] = zip
-        record["zipLocal"] = true as CKRecordValue
+        if let zipURL = zipURL {
+            record["zip"] = CKAsset(fileURL: zipURL)
+            record["zipLocal"] = true as CKRecordValue
+        } else {
+            record["zipLocal"] = false as CKRecordValue
+        }
         
-        let pdf = CKAsset(fileURL: pdfURL)
-        record["pdf"] = pdf
-        record["pdfLocal"] = true as CKRecordValue
+        
+        if let pdfURL = pdfURL {
+            record["pdf"] = CKAsset(fileURL: pdfURL)
+            record["pdfLocal"] = true as CKRecordValue
+        } else {
+            record["pdfLocal"] = false as CKRecordValue
+        }
         
         db.save(record) { record, err in
             DispatchQueue.main.async {
@@ -555,20 +563,6 @@ class Cloud {
             return
         }
         
-        guard let zip = record["zip"] as? CKAsset, let pdf = record["pdf"] as? CKAsset else {
-            printError(from: "cloud save output", message: "ZIP or PDF is missing")
-            return
-        }
-        
-        guard let zipURL = zip.fileURL, let pdfURL = pdf.fileURL else {
-            printError(from: "cloud save output", message: "ZIP or PDF URL is nil")
-            return
-        }
-        guard let zipData = try? Data(contentsOf: zipURL), let pdfData = try? Data(contentsOf: pdfURL) else {
-            printError(from: "cloud save output", message: "Cannot create data of CKAsset")
-            return
-        }
-        
         guard let zipLocal = record["zipLocal"] as? Bool, let pdfLocal = record["pdfLocal"] as? Bool else {
             printError(from: "cloud save output", message: "record do not contains informations if files is local")
             return
@@ -577,10 +571,18 @@ class Cloud {
         var zipExist: Bool = false
         var pdfExist: Bool = false
         if zipLocal {
+            guard let zip = record["zip"] as? CKAsset, let zipURL = zip.fileURL, let zipData = try? Data(contentsOf: zipURL) else {
+                printError(from: "cloud save output", message: "Cannot save zip file locally (zip missing or cannot be convert into data)")
+                return
+            }
             guard let zipSaveURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return }
             zipExist = FileManager.default.createFile(atPath: zipSaveURL.path, contents: zipData, attributes: nil)
         }
         if pdfLocal {
+            guard let pdf = record["pdf"] as? CKAsset, let pdfURL = pdf.fileURL, let pdfData = try? Data(contentsOf: pdfURL) else {
+                printError(from: "cloud save output", message: "Cannot save pdf file locally (pdf missing or cannot be convert into data)")
+                return
+            }
             guard let pdfSaveURL = Dirs.shared.getPdfURL(protoID: protoID, internalID: internalID) else { return }
             pdfExist = FileManager.default.createFile(atPath: pdfSaveURL.path, contents: pdfData, attributes: nil)
         }
@@ -592,6 +594,43 @@ class Cloud {
         outputs.append(output)
     }
     
+    
+    private func checkIfEveryThingIsOnCloud() {
+        DispatchQueue.main.async {
+            let moc = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+            guard let allDAs = try? moc.fetch(DatabaseArchive.fetchRequest()) as? [DatabaseArchive] else { print("ooops"); return }
+            guard let allPhotos = try? moc.fetch(MyPhoto.fetchRequest()) as? [MyPhoto] else  { print("ooops"); return }
+            guard let allOutputs = try? moc.fetch(OutputArchive.fetchRequest()) as? [OutputArchive] else { print("ooops"); return }
+            DispatchQueue.global().async {
+                for da in allDAs {
+                    if da.recordID == nil {
+                        da.getProto{ encodedProto in
+                            guard let encoded = encodedProto else { return }
+                            self.saveToCloud(recordType: RecordType.protocols, protoID: Int(da.protoID), encodedProto: encoded) { record in
+                                da.recordID = record
+                            }
+                        }
+                    }
+                }
+                for photo in allPhotos {
+                    if photo.recordID == nil {
+                        self.saveToCloud(recordType: RecordType.photos, photo: photo){ record in
+                            photo.recordID = record
+                        }
+                    }
+                }
+                for output in allOutputs {
+                    if output.recordID == nil {
+                        self.saveToCloud(recordType: RecordType.outputs, protoID: Int(output.protoID), internalID: Int(output.internalID), zipURL: output.getZipURL(), pdfURL: output.getPdfURL()){ record in
+                            output.recordID = record
+                        }
+                    }
+                }
+                
+                moc.trySave(savingFrom: "checkIfEveryThingIsOnCloud", errorFrom: "checkIfEveryThingIsOnCloud", error: "Cannot saved new changes")
+            }
+        }
+    }
     
     // MARK: - Insert fetched changes into local core data
     /**
