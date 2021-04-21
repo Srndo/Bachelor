@@ -120,7 +120,7 @@ class PDF {
             
             var yRow = tableRowTitle(pageRect, y: yForAntoherLine)
 
-            for photo in photos {
+            for photo in photos.sorted(by: { $0.name < $1.name }) {
                 yRow += tableRow(y: yRow, photoID: photo.name, targetDiameter: photo.targetDiameter, description: photo.descriptionOfPlace, requestVal: proto.method.requestedValue, realVal: photo.value, dimension: proto.device.dimension)
             }
         }
