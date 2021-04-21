@@ -5,6 +5,7 @@
         <attribute name="construction" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="encodedProto" optional="YES" attributeType="String"/>
+        <attribute name="fav" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName="NSAttributedCKRecordTransformer" customClassName="CKRecordID"/>
@@ -26,7 +27,7 @@
         <attribute name="zip" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
     </entity>
     <elements>
-        <element name="DatabaseArchive" positionX="-63" positionY="-18" width="128" height="134"/>
+        <element name="DatabaseArchive" positionX="-63" positionY="-18" width="128" height="149"/>
         <element name="MyPhoto" positionX="-54" positionY="18" width="128" height="134"/>
         <element name="OutputArchive" positionX="-45" positionY="45" width="128" height="104"/>
     </elements>
