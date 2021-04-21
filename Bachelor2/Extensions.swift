@@ -213,6 +213,7 @@ extension ProtocolView {
     private func createPhotosZIP(protoID: Int) -> URL? {
         guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return nil } // dir where photos is stored
         guard let names = Dirs.shared.getConentsOfDir(at: imagesURL) else { return nil } // photos urls
+        guard !names.isEmpty else { return nil } // if doesnt exist any photo not create zip
         guard let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return nil } // dir where zip gonna be stored
         
         do {
