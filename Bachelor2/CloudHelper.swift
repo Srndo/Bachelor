@@ -208,6 +208,7 @@ class Cloud {
         record["name"] = photo.name as CKRecordValue
         record["local"] = photo.local as CKRecordValue
         record["diameter"] = photo.targetDiameter as CKRecordValue
+        record["desc"] = photo.descriptionOfPlace as CKRecordValue
         
         guard let path = photo.getPhotoPath() else {
             printError(from: "save to cloud [photo]", message: "Photo path is nil")
@@ -335,6 +336,7 @@ class Cloud {
             record["name"] = photo.name as CKRecordValue
             record["local"] = photo.local as CKRecordValue
             record["diameter"] = photo.targetDiameter as CKRecordValue
+            record["desc"] = photo.descriptionOfPlace as CKRecordValue
             
             self.db.save(record) { record, err in
                 if let err = err {
@@ -527,7 +529,7 @@ class Cloud {
         }
         
         let DA = DatabaseArchive(entity: DatabaseArchive.entity(), insertInto: nil)
-        guard let _ = DA.fillWithData(encodedProto: encodedProto, local: false, recordID: recordID) else { return }
+        guard let _ = DA.create(encodedProto: encodedProto, local: false, recordID: recordID) else { return }
         
         guard !DAs.contains(where: { $0.protoID == DA.protoID }) else { return }
         DAs.append(DA)
@@ -596,9 +598,6 @@ class Cloud {
      # Insert fetch changes into local database
      If class variables contains NSMangedObjects is not empty.
      Create (modify, delete) this objects.
-     - Parameter moc: NSManagedObjectContext into which is changes inserted
-     - Parameter allPhotos: Fetched results of already exists MyPhotos in local database
-     - Parameter allDAs: Fetched results of already exists DatabaseArchive in local database
      */
     
     private func insertFetchChangeIntoCoreData() {
@@ -710,16 +709,9 @@ class Cloud {
     private func insertIntoMocDAs(moc: NSManagedObjectContext, allDAs: [DatabaseArchive]) {
         for da in DAs {
             if let update = allDAs.first(where: { $0.protoID == da.protoID }) {
-                guard let proto = update.fillWithData(encodedProto: da.encodedProto, local: false, recordID: da.recordID) else { continue }
-                let document = Document(protoID: proto.id)
-                document.modify(new: proto, afterSave: {})
-                
-            }
-            else if da.managedObjectContext == nil {
+                update.modifyVariables(new: da)
+            } else if da.managedObjectContext == nil {
                 moc.insert(da)
-                guard let proto = da.decodeProto() else { continue }
-                let document = Document(protoID: proto.id, proto: proto)
-                document.createNew(completition: nil)
             }
         }
     }

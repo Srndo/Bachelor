@@ -16,7 +16,6 @@ extension DatabaseArchive {
         return NSFetchRequest<DatabaseArchive>(entityName: "DatabaseArchive")
     }
 
-    @NSManaged public var encodedProto: String
     @NSManaged public var client: String
     @NSManaged public var date: Date?
     @NSManaged public var local: Bool
@@ -24,34 +23,41 @@ extension DatabaseArchive {
     @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var construction: String
     
-    
-    func decodeProto() -> Proto? {
-        guard let data = Data(base64Encoded: encodedProto) else {
-            printError(from: "decodeProto", message: "Cannot convert encodedProto to data")
-            return nil
-        }
-        guard let proto = try? JSONDecoder().decode(Proto.self, from: data) else {
-            printError(from: "decodeProto", message: "Cannot decode encodedProto to Proto")
-            return nil
-        }
-        return proto
-    }
-    
-    func fillWithData(encodedProto: String, local: Bool, recordID: CKRecord.ID? = nil) -> Proto? {
+    func create(encodedProto: String, local: Bool, recordID: CKRecord.ID? = nil) -> Proto? {
         guard let proto = decodeProto(encodedProto: encodedProto) else { return nil }
-        
-        self.encodedProto = encodedProto
+        let document = Document(protoID: proto.id, proto: proto)
+        if document.exists() {
+            document.modify(new: proto, afterSave: {
+                self.local = true
+            })
+        } else {
+            document.createNew {
+                self.local = true
+            }
+        }
         fill(proto: proto, local: local, recordID: recordID)
         return proto
     }
     
-    func fillWithData(proto: Proto, local: Bool, recordID: CKRecord.ID? = nil) -> String?{
+    func modifyVariables(new: DatabaseArchive) {
+        fill(da: new)
+    }
+    
+    func fillWithData(proto: Proto, local: Bool, recordID: CKRecord.ID? = nil) -> String? {
         guard let encoded = try? JSONEncoder().encode(proto).base64EncodedString() else { printError(from: "fillWithData", message: "Cannot encode protocol[\(proto.id)]"); return nil}
         
-        self.encodedProto = encoded
         fill(proto: proto, local: local, recordID: recordID)
         
         return encoded
+    }
+    
+    private func fill(da: DatabaseArchive) {
+        self.client = da.client
+        self.date = da.date
+        self.local = da.local
+        self.protoID = da.protoID
+        self.construction = da.construction
+        self.recordID = da.recordID
     }
     
     private func fill(proto: Proto, local: Bool, recordID: CKRecord.ID?) {
