@@ -186,8 +186,8 @@ extension ProtocolView {
         // save incremented proto.id
         creatingOutput.wrappedValue = true
         modify(afterModified: {
-            guard let zipURL = createPhotosZIP(protoID: proto.id) else { return }
-            guard let pdfURL = createProtoPDF(proto: proto, photos: photos) else { return }
+            let zipURL = createPhotosZIP(protoID: proto.id)
+            let pdfURL = createProtoPDF(proto: proto, photos: photos)
             // if cloud save successfull create output archive
             let outArch = OutputArchive(context: self.moc)
             // save outputs on cloud
@@ -196,7 +196,7 @@ extension ProtocolView {
                 moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
                 creatingOutput.wrappedValue = false
             }
-            outArch.fill(protoID: proto.id, internalID: proto.internalID, zipExist: true, pdfExist: true)
+            outArch.fill(protoID: proto.id, internalID: proto.internalID, zipExist: zipURL != nil, pdfExist: pdfURL != nil)
             moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
         })
         return
