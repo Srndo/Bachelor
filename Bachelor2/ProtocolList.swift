@@ -23,6 +23,7 @@ struct ProtocolList: View {
                 NavigationLink(destination: ProtocolView(protoID: Int(proto.protoID))
                                 .environment(\.managedObjectContext , moc)){
                     HStack{
+//                        Button(action: {print("Favorite: \(proto.protoID)")}){ Image(systemName: "star").foregroundColor(.yellow) }.buttonStyle(BorderlessButtonStyle())
                         VStack{
                             Text(proto.client)
                             Text(proto.construction)

@@ -20,7 +20,7 @@ struct ContentView: View {
             }
             .tabItem{
                 VStack{
-                    Text("Novy protokol")
+                    Text("Nový protokol")
                     Image(systemName: "doc.text")
                 }
             }
@@ -39,6 +39,7 @@ struct ContentView: View {
             }
             .tag(1)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
         .sheet(item: $activeSheet) { id in
             if id == .first {
                 CreatorView(activeSheet: $activeSheet)
