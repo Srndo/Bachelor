@@ -7,14 +7,14 @@
         <attribute name="encodedProto" optional="YES" attributeType="String"/>
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName=""/>
+        <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName="NSAttributedCKRecordTransformer" customClassName="CKRecordID"/>
     </entity>
     <entity name="MyPhoto" representedClassName="MyPhoto" syncable="YES">
         <attribute name="descriptionOfPlace" optional="YES" attributeType="String"/>
         <attribute name="local" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="recordID" optional="YES" attributeType="Transformable"/>
+        <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName="NSAttributedCKRecordTransformer" customClassName="CKRecordID"/>
         <attribute name="targetDiameter" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="value" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
     </entity>
@@ -22,7 +22,7 @@
         <attribute name="internalID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="pdf" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protoID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="recordID" optional="YES" attributeType="Transformable"/>
+        <attribute name="recordID" optional="YES" attributeType="Transformable" valueTransformerName="NSAttributedCKRecordTransformer" customClassName="CKRecordID"/>
         <attribute name="zip" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
     </entity>
     <elements>
