@@ -232,7 +232,6 @@ struct ProtocolView: View {
     private func printDB() {
         print("----------------")
         print("Photos: \(allPhotos.count)")
-        allPhotos.forEach{ photo in print(photo.protoID)}
         print("DAs: \(allDA.count)")
         print("Outputs: \(allOutputs.count)")
         print("----------------")

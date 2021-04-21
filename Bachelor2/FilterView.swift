@@ -25,14 +25,7 @@ struct Filtred<T: NSManagedObject, Content: View>: View {
     }
     
     init(filterKey: String, filter: String, content: @escaping (T) -> Content){
-        var sortDesc: [NSSortDescriptor] = []
-        
-        if T.self == DatabaseArchive.self {
-            sortDesc.append(NSSortDescriptor(key: "fav", ascending: false))
-        }
-        
-        sortDesc.append(NSSortDescriptor(key: "protoID", ascending: true))
-        
+        let sortDesc: [NSSortDescriptor] = [NSSortDescriptor(key: "protoID", ascending: true)]
         if filter != "" {
             fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: sortDesc, predicate: NSPredicate(format: "%K BEGINSWITH %@", filterKey, filter))
         }
