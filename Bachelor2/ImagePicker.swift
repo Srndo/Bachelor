@@ -13,10 +13,11 @@ struct ImagePicker: UIViewControllerRepresentable {
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
     @Binding var lastPhotoIndex: Int
+    @Binding var locked: Bool
     var protoID: Int
     
     func makeCoordinator() -> ImagePickerCoordinator {
-        return ImagePickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex)
+        return ImagePickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex, locked: $locked)
     }
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
@@ -38,16 +39,21 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
     @Binding var index: Int
+    @Binding var locked: Bool
     var protoID: Int
+    var end: Int = 0
     
-    init(isShow: Binding<Bool>, photos: Binding<[MyPhoto]>, protoID: Int, lastPhotoIndex: Binding<Int>) {
+    init(isShow: Binding<Bool>, photos: Binding<[MyPhoto]>, protoID: Int, lastPhotoIndex: Binding<Int>, locked: Binding<Bool>) {
         _isShow = isShow
         _photos = photos
         _index = lastPhotoIndex
+        _locked = locked
         self.protoID = protoID
     }
     
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        locked = true
+        end = results.count
         for photo in results {
             if photo.itemProvider.canLoadObject(ofClass: UIImage.self) {
                 photo.itemProvider.loadObject(ofClass: UIImage.self) { image, err in
@@ -71,11 +77,18 @@ class ImagePickerCoordinator: NSObject, PHPickerViewControllerDelegate {
     }
     
     private func createMyPhoto(uiimage: UIImage, name: Int, valueString: String = "-1.0") {
-        let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        let value = Double(valueString)
-        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0, diameter: 50.0)
         DispatchQueue.main.async {
+            let moc = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+            let photo = MyPhoto(context: moc)
+            let value = Double(valueString)
+            photo.savePhoto(toCloud: true, photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0) {
+                moc.trySave(savingFrom: "savePhoto", errorFrom: "savePhoto", error: "Cannot saved new photo")
+            }
             self.photos.append(photo)
+            self.end -= 1
+            if self.end <= 0 {
+                self.locked = false
+            }
         }
     }
     

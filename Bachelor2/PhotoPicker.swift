@@ -13,16 +13,19 @@ class PhotoPickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
     @Binding var index: Int
+    @Binding var locked: Bool
     var protoID: Int
     
-    init(isShow: Binding<Bool>, photos: Binding<[MyPhoto]>, protoID: Int, lastPhotoIndex: Binding<Int>) {
+    init(isShow: Binding<Bool>, photos: Binding<[MyPhoto]>, protoID: Int, lastPhotoIndex: Binding<Int>, locked: Binding<Bool>) {
         _isShow = isShow
         _photos = photos
         _index = lastPhotoIndex
+        _locked = locked
         self.protoID = protoID
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        locked = true
         DispatchQueue.global().async {
             guard let uiimage = info[.originalImage] as? UIImage else { return }
             let rotatedImage = self.fixImageOrientation(uiimage)
@@ -53,11 +56,15 @@ class PhotoPickerCoordinator: NSObject, UINavigationControllerDelegate, UIImageP
     }
     
     private func createMyPhoto(uiimage: UIImage, name: Int, valueString: String = "-1.0") {
-        let photo = MyPhoto(entity: MyPhoto.entity(), insertInto: nil)
-        let value = Double(valueString)
-        photo.savePhotoToDisk(photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0, diameter: 50.0)
         DispatchQueue.main.async {
+            let moc = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+            let photo = MyPhoto(context: moc)
+            let value = Double(valueString)
+            photo.savePhoto(toCloud: true, photo: uiimage, protoID: self.protoID, name: name, value: value ?? -1.0, diameter: 50.0) {
+                moc.trySave(savingFrom: "savePhoto", errorFrom: "savePhoto", error: "Cannot saved new photo")
+            }
             self.photos.append(photo)
+            self.locked = false
         }
     }
     
@@ -73,6 +80,7 @@ struct PhotoPicker: UIViewControllerRepresentable{
     @Binding var isShow: Bool
     @Binding var photos: [MyPhoto]
     @Binding var lastPhotoIndex: Int
+    @Binding var locked: Bool
     var protoID: Int
     
     var source: UIImagePickerController.SourceType
@@ -81,7 +89,7 @@ struct PhotoPicker: UIViewControllerRepresentable{
     }
     
     func makeCoordinator() -> PhotoPickerCoordinator {
-        return PhotoPickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex)
+        return PhotoPickerCoordinator(isShow: $isShow, photos: $photos, protoID: protoID, lastPhotoIndex: $lastPhotoIndex, locked: $locked)
     }
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<PhotoPicker>) -> UIImagePickerController {

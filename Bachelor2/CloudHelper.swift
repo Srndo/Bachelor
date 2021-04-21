@@ -506,7 +506,7 @@ class Cloud {
                 printError(from: "cloud save photo", message: "Cannot create data from asset")
                 return
             }
-            photo.savePhotoToDisk(photo: data, protoID: protoID, name: name, value: value, diameter: diameter)
+            photo.savePhoto(toCloud: false, photo: data, protoID: protoID, name: name, value: value, diameter: diameter)
         } else {
             photo.name = Int16(name)
             photo.protoID = Int16(protoID)

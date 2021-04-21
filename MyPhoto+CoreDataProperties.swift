@@ -29,18 +29,18 @@ extension MyPhoto {
         return dir.appendingPathComponent("\(name).jpg")
     }
     
-    func savePhotoToDisk(photo: Data?, protoID: Int, name: Int, value: Double, diameter: Double){
+    func savePhoto(toCloud: Bool, photo: Data?, protoID: Int, name: Int, value: Double, diameter: Double = 50.0, mocSave: (()->())? = nil){
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         guard let data = photo else { printError(from: "save photo", message: "Data is nil"); return }
-        _savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value, diameter: diameter)
+        _savePhoto(data: data, dir: dir, protoID: protoID, name: name, value: value, diameter: diameter, cloud: toCloud, mocSave: mocSave)
 
     }
     
-    func savePhotoToDisk(photo: UIImage?, protoID: Int, name: Int, value: Double, diameter: Double) {
-            guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
-            guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
-            guard let data = photo.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert photo into data"); return }
-        _savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter)
+    func savePhoto(toCloud: Bool, photo: UIImage?, protoID: Int, name: Int, value: Double, diameter: Double = 50.0, mocSave: (()->())? = nil) {
+        guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
+        guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
+        guard let data = photo.jpegData(compressionQuality: 0.1) else { printError(from: "save photo", message: "Cannot convert photo into data"); return }
+        _savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter, cloud: toCloud, mocSave: mocSave)
     }
     
     func deleteFromDisk() {
@@ -59,7 +59,7 @@ extension MyPhoto {
         }
     }
     
-    private func _savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double) {
+    private func _savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double, cloud: Bool, mocSave: (()->())?) {
         DispatchQueue.global().async {
             self.name = Int16(name)
             self.protoID = Int16(protoID)
@@ -72,12 +72,26 @@ extension MyPhoto {
                 try data.write(to: imagePath)
                 self.local = true
                 print("Photo saved to disk")
+                if cloud {
+                    self.saveToCloud(mocSave: mocSave)
+                }
             } catch {
                 printError(from: "save photo", message: error.localizedDescription)
             }
+            if let mocSave = mocSave {
+                mocSave()
+            }
         }
     }
-
+    
+    private func saveToCloud(mocSave: (()->())?) {
+        Cloud.shared.saveToCloud(recordType: Cloud.RecordType.photos, photo: self) { recordID in
+            self.recordID = recordID
+            if let mocSave = mocSave {
+                mocSave()
+            }
+        }
+    }
 }
 
 extension MyPhoto : Identifiable {
