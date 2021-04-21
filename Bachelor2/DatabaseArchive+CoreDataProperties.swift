@@ -22,6 +22,7 @@ extension DatabaseArchive {
     @NSManaged public var protoID: Int16
     @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var construction: String
+    @NSManaged public var fav: Bool
     
     func getProto(completion: @escaping (String?) -> ()) {
         let document = Document(protoID: Int(protoID))
@@ -32,6 +33,7 @@ extension DatabaseArchive {
             } else {
                 completion(nil)
             }
+            document.close()
         }
     }
     

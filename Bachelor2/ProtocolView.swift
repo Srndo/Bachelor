@@ -135,7 +135,7 @@ struct ProtocolView: View {
                 }.disabled(locked)
             }.foregroundColor(!proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" ? .green : .red )
 
-            Group { // without group causing Error: Extra argument in call (prob. SwiftUI bug on "big view" ? )
+            Group { // struct allow only 10 views
                 DateView(proto: $proto, locked: $locked)
                 
                 PhotoView(protoID: proto.id, internalID: proto.internalID, photos: photos, lastPhotoIndex: $lastPhotoNumber, locked: $locked).environment(\.managedObjectContext , moc)

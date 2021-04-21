@@ -23,7 +23,13 @@ struct ProtocolList: View {
                 NavigationLink(destination: ProtocolView(protoID: Int(proto.protoID))
                                 .environment(\.managedObjectContext , moc)){
                     HStack{
-//                        Button(action: {print("Favorite: \(proto.protoID)")}){ Image(systemName: "star").foregroundColor(.yellow) }.buttonStyle(BorderlessButtonStyle())
+                        Button(action: {changeFavorite(protoID: proto.protoID)}){
+                            if proto.fav {
+                                Image(systemName: "star.fill").foregroundColor(.yellow)
+                            } else {
+                                Image(systemName: "star").foregroundColor(.yellow)
+                            }
+                        }.buttonStyle(BorderlessButtonStyle())
                         VStack{
                             Text(proto.client)
                             Text(proto.construction)
@@ -55,8 +61,15 @@ struct ProtocolList: View {
             }
         }
     }
-    func showDate(date: Date?) -> String {
+    
+    private func showDate(date: Date?) -> String {
         guard let date = date else { return ""}
         return ":" + date.showYear()
+    }
+    
+    private func changeFavorite(protoID: Int16) {
+        guard let favDa = DAs.first(where: { $0.protoID == protoID }) else { return }
+        favDa.fav.toggle()
+        moc.trySave(savingFrom: "cahngedFavorite", errorFrom: "cahngedFavorite", error: "Cannot save favorite change")
     }
 }

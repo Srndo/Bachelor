@@ -24,13 +24,22 @@ struct Filtred<T: NSManagedObject, Content: View>: View {
         }.onDelete(perform: remove)
     }
     
-    init(filterKey: String, filter:String?, content: @escaping (T) -> Content){
+    init(filterKey: String, filter: String, content: @escaping (T) -> Content){
+        var sortDesc: [NSSortDescriptor] = []
+        
+        if T.self == DatabaseArchive.self {
+            sortDesc.append(NSSortDescriptor(key: "fav", ascending: false))
+        }
+        
+        sortDesc.append(NSSortDescriptor(key: "protoID", ascending: true))
+        
         if filter != "" {
-            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [NSSortDescriptor(key: "protoID", ascending: true)], predicate: NSPredicate(format: "%K BEGINSWITH %@", filterKey, filter!))
+            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: sortDesc, predicate: NSPredicate(format: "%K BEGINSWITH %@", filterKey, filter))
         }
         else{
-            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: [NSSortDescriptor(key: "protoID", ascending: true)])
+            fetchedRequest = FetchRequest<T>(entity: T.entity(), sortDescriptors: sortDesc)
         }
+        
         self.content = content
     }
 }
