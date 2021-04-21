@@ -59,13 +59,10 @@ struct PhotosView: View {
     
     @Binding var photos: [MyPhoto]
     @Binding var lastPhotoIndex: Int
-    @State var protoID: Int
-    @State var internalID: Int
+    var protoID: Int
+    var internalID: Int
     @State private var showAllert: Bool = false
     @State private var edit: Bool = false
-    @State private var newValue: String = "-1.0"
-    @State private var newDesc: String  = ""
-    @State private var newDiameter: String = ""
     @State private var editingPhoto: MyPhoto?
     @State private var placeholder: String = "Zadajte hodnotu"
     @State private var refresh: Bool = false
@@ -122,9 +119,6 @@ struct PhotosView: View {
                         }.highPriorityGesture(TapGesture(count: 2).onEnded {
                             guard locked != true else { return }
                             self.edit.toggle()
-                            newValue = String(photo.value)
-                            newDesc = photo.descriptionOfPlace
-                            newDiameter = String(photo.targetDiameter)
                             editingPhoto = photo
                         })
                     }
@@ -132,33 +126,7 @@ struct PhotosView: View {
             }
         }
         .sheet(isPresented: $edit) {
-            Form{
-                Section{
-                    TextField(placeholder, text: $newValue)
-                        .onChange(of: newValue, perform: { _ in
-                            guard let value = Double(newValue) else { return }
-                            if value < 0.0 {
-                                placeholder = "Prosim zadajte znova"
-                                newValue = ""
-                            }
-                        })
-                    TextField("Zadajte popis meracieho miesta", text: $newDesc)
-                    TextField("Zadajte veľkosť terča", text: $newDiameter)
-                    Button("Ulož"){
-                        guard let photo = editingPhoto else { return }
-                        guard let value = Double(newValue) else { return }
-                        photo.value = value
-                        photo.descriptionOfPlace = newDesc
-                        if !newDiameter.isEmpty, let diameter = Double(newDiameter) {
-                            photo.targetDiameter = diameter
-                        }
-                        moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
-                        Cloud.shared.modifyOnCloud(photo: photo)
-                        edit.toggle()
-                        refresh.toggle()
-                    }.disabled(editingPhoto == nil)
-                }
-            }
+            EditingView(editingPhoto: $editingPhoto, show: $edit).environment(\.managedObjectContext , moc)
         }
         .onDisappear{
             // MARK: Cloud save
@@ -170,6 +138,59 @@ struct PhotosView: View {
                 }
             }
             moc.trySave(savingFrom: "photo disappear", errorFrom: "photoView", error: "Cannot saved photos")
+        }
+    }
+}
+
+struct EditingView: View {
+    @Environment(\.managedObjectContext) var moc
+    @State private var newValue: String = ""
+    @State private var newDesc: String = ""
+    @State private var newDiameter: String = ""
+    @State private var placeholder: String = "Zadajte hodnotu"
+    
+    @Binding var editingPhoto: MyPhoto?
+    @Binding var show: Bool
+    
+    init(editingPhoto: Binding<MyPhoto?>, show: Binding<Bool>){
+        _editingPhoto = editingPhoto
+        _show = show
+    }
+    var body: some View {
+        Form{
+            Section{
+                TextField(placeholder, text: $newValue)
+                    .onChange(of: newValue, perform: { _ in
+                        guard let value = Double(newValue) else { return }
+                        if value < 0.0 {
+                            placeholder = "Prosim zadajte znova"
+                            newValue = ""
+                        }
+                    })
+                TextField("Zadajte popis meracieho miesta", text: $newDesc)
+                TextField("Zadajte veľkosť terča", text: $newDiameter)
+                Button("Ulož"){
+                    guard let photo = editingPhoto else { return }
+                    guard let value = Double(newValue) else { return }
+                    photo.value = value
+                    photo.descriptionOfPlace = newDesc
+                    if !newDiameter.isEmpty, let diameter = Double(newDiameter) {
+                        photo.targetDiameter = diameter
+                    }
+                    moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
+                    Cloud.shared.modifyOnCloud(photo: photo)
+                    show.toggle()
+                }
+            }
+        }
+        .onAppear{
+            guard let photo = editingPhoto else {
+                show.toggle()
+                return
+            }
+            newValue = String(photo.value)
+            newDesc = photo.descriptionOfPlace
+            newDiameter = String(photo.targetDiameter)
         }
     }
 }
