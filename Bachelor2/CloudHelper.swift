@@ -176,12 +176,12 @@ class Cloud {
                     printError(from: "cloud save [protocol]", message: err.localizedDescription)
                     completition(nil)
                 } else {
-                    print("Protcol saved on cloud")
                     guard let record = record else {
                         printError(from: "cloud save [protocol]", message: "Returned record is nil")
                         completition(nil)
                         return
                     }
+                    print("Protocol saved on cloud")
                     completition(record.recordID)
                 }
             }
@@ -312,11 +312,11 @@ class Cloud {
                     return
                 }
                 
-                print("Record deleted from cloud")
                 guard let recordID = recordID else {
                     completition(nil)
                     return
                 }
+                print("Record deleted from cloud")
                 completition(recordID)
                 return
             }
@@ -546,7 +546,7 @@ class Cloud {
     
     // MARK: saveOutput()
     /**
-     # Save proto
+     # Save output
      Takes one CKRecord and if contains all needed informations create Output.
      - Parameter record: record to save as OutputArchiver
      */
@@ -604,12 +604,7 @@ class Cloud {
             DispatchQueue.global().async {
                 for da in allDAs {
                     if da.recordID == nil {
-                        da.getProto{ encodedProto in
-                            guard let encoded = encodedProto else { return }
-                            self.saveToCloud(recordType: RecordType.protocols, protoID: Int(da.protoID), encodedProto: encoded) { record in
-                                da.recordID = record
-                            }
-                        }
+                        da.saveToCloud()
                     }
                 }
                 for photo in allPhotos {

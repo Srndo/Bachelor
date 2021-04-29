@@ -109,11 +109,15 @@ extension ProtocolView {
         if lastPhotoNumber > proto.lastPhotoIndex { proto.lastPhotoIndex = lastPhotoNumber } // if photo was added
         guard document.proto != proto else { afterModified(); return } // if proto is not changed afterModified contains closeDocument
         guard let DA = allDA.first(where: { $0.protoID == Int16(proto.id) }) else { printError(from: "modify", message: "Protocol for modifying is not in database"); return }
-        guard let recordID = DA.recordID else { printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil"); return }
-        let _ = DA.fillWithData(proto: proto, local: true, recordID: recordID)
+        
+        let _ = DA.fillWithData(proto: proto, local: true)
         document.modify(new: proto, afterSave: afterModified)
         
-        Cloud.shared.modifyOnCloud(recordID: recordID, proto: proto)
+        if let recordID = DA.recordID {
+            Cloud.shared.modifyOnCloud(recordID: recordID, proto: proto)
+        } else {
+            printError(from: "modify", message: "Record.ID of protocol[\(proto.id)] is nil")
+        }
         
         save(from: "modify", error: "Cannot save modified proto", errorViewMessage: "ERROR: Zmeny sa nepodarilo uložiť")
         self.message = "Zmeny uložené"
@@ -127,6 +131,7 @@ extension ProtocolView {
         document.open { res in
             if res {
                 print("Document with protocol \(protoID) opened.")
+                // fill view with Data
                 DispatchQueue.main.async {
                     guard let proto = document.proto else { printError(from: "protoView-document", message: "Document protocol is nil"); return }
                     self.proto = proto
@@ -186,48 +191,20 @@ extension ProtocolView {
         // save incremented proto.id
         creatingOutput.wrappedValue = true
         modify(afterModified: {
-            let zipURL = createPhotosZIP(protoID: proto.id)
-            let pdfURL = createProtoPDF(proto: proto, photos: photos)
             // if cloud save successfull create output archive
             let outArch = OutputArchive(context: self.moc)
+            outArch.fill(protoID: proto.id, internalID: proto.internalID)
+            let zipURL = outArch.createPhotosZIP()
+            let pdfURL = outArch.createProtoPDF(proto: proto, photos: photos)
             // save outputs on cloud
             Cloud.shared.saveToCloud(recordType: Cloud.RecordType.outputs, protoID: proto.id, internalID: proto.internalID, zipURL: zipURL, pdfURL: pdfURL){ recordID in
                 outArch.recordID = recordID
                 moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
-                creatingOutput.wrappedValue = false
             }
-            outArch.fill(protoID: proto.id, internalID: proto.internalID, zipExist: zipURL != nil, pdfExist: pdfURL != nil)
             moc.trySave(savingFrom: "createOutput", errorFrom: "create outputs", error: "Cannot saved new entity of output archive")
+            creatingOutput.wrappedValue = false
         })
         return
-    }
-    
-    private func createProtoPDF(proto: Proto, photos: [MyPhoto]) -> URL? {
-        let pdfCreator = PDF()
-        let pdfData = pdfCreator.createPDF(proto: proto, photos: photos)
-        guard let pdfURL = Dirs.shared.getPdfURL(protoID: proto.id, internalID: proto.internalID) else { return nil }
-        FileManager.default.createFile(atPath: pdfURL.path, contents: pdfData, attributes: nil)
-        return pdfURL
-    }
-    
-    private func createPhotosZIP(protoID: Int) -> URL? {
-        guard let imagesURL = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return nil } // dir where photos is stored
-        guard let names = Dirs.shared.getConentsOfDir(at: imagesURL) else { return nil } // photos urls
-        guard !names.isEmpty else { return nil } // if doesnt exist any photo not create zip
-        guard let zipURL = Dirs.shared.getZipURL(protoID: protoID, internalID: internalID) else { return nil } // dir where zip gonna be stored
-        
-        do {
-            try Zip.zipFiles(paths: names, zipFilePath: zipURL, password: nil, progress: { (progres) -> () in
-                print("Ziping: \(progres)%")
-            })
-        } catch {
-            printError(from: "cretePhotosZIP", message: error.localizedDescription)
-            return  nil
-        }
-
-        moc.trySave(savingFrom: "createPhotosZip", errorFrom: "create ZIP from photos", error: "Cannot saved remove changes [photo.local -> false]")
-        print("ZIP with photos of protocol \(self.proto.id) was created.")
-        return zipURL
     }
     
     private func save(from: String, error message: String, errorViewMessage: String) {
@@ -246,27 +223,30 @@ extension Filtred {
     func remove(at offSets: IndexSet) {
         for index in offSets {
             let remove = DAs[index]
-            guard let recordID = remove.recordID else {
+            if let recordID = remove.recordID {
+                Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
+                    guard let recordID = recordID else { return }
+                    guard let removeCloud = DAs.first(where: { $0.recordID == recordID }) else {
+                        printError(from: "remove cloud", message: "RecordID returned from cloud not exist in core data")
+                        return
+                    }
+                    guard removeCloud == remove else {
+                        printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same")
+                        return
+                    }
+                    moc.trySave(savingFrom: "protoListRemove", errorFrom: "remove cloud", error: "Cannot saved managed object context")
+                }
+            } else {
                 printError(from: "remove protocol", message: "RecordID of protocol \(remove.protoID) is nil")
-                return
+                print("Removing only local copy...")
             }
-            Cloud.shared.deleteFromCloud(recordID: recordID) { recordID in
-                guard let recordID = recordID else { return }
-                guard let removeCloud = DAs.first(where: { $0.recordID == recordID }) else {
-                    printError(from: "remove cloud", message: "RecordID returned from cloud not exist in core data")
-                    return
-                }
-                guard removeCloud == remove else {
-                    printError(from: "remove cloud", message: "Marked protocol to remove and returned from cloud is not same")
-                    return
-                }
-                removePhotos(protoID: Int(remove.protoID))
-                removeDocument(protoID: Int(remove.protoID))
-                removeOutputs(protoID: remove.protoID)
-                _ = Dirs.shared.remove(at: Dirs.shared.getSpecificPhotoDir(protoID: Int(remove.protoID)))
-                moc.delete(remove)
-                moc.trySave(savingFrom: "protoListRemove", errorFrom: "remove cloud", error: "Cannot saved managed object context")
-            }
+            remove.removeDocument()
+            removePhotos(protoID: remove.protoID)
+            removeOutputs(protoID: remove.protoID)
+            _ = Dirs.shared.remove(at: Dirs.shared.getSpecificPhotoDir(protoID: Int(remove.protoID)))
+            moc.delete(remove)
+            moc.trySave(savingFrom: "protoListRemove", errorFrom: "remove", error: "Cannot saved removed protocol")
+    
         }
     }
     
@@ -285,21 +265,7 @@ extension Filtred {
         _ = Dirs.shared.remove(at: Dirs.shared.getProtocolOutputDir(protoID: Int(protoID)))
     }
     
-    private func removeDocument(protoID: Int){
-        let document = Document(protoID: protoID)
-        
-        if FileManager.default.fileExists(atPath: document.documentPath.path) {
-            do {
-                try document.delete()
-                print("Document removed from local storage")
-            } catch {
-                printError(from: "remove document", message: "Cannot remove document for protocol[\(protoID)]")
-                print(error)
-            }
-        }
-    }
-    
-    private func removePhotos(protoID: Int){
+    private func removePhotos(protoID: Int16){
         let removes = self.photos.filter{ $0.protoID == protoID }
         for remove in removes {
             remove.deleteFromDisk()

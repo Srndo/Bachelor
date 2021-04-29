@@ -24,11 +24,20 @@ extension MyPhoto {
     @NSManaged public var targetDiameter: Double
     @NSManaged public var value: Double
     
+    /**
+        # Get photo path
+        Function return URL of photo saved in application SandBox.
+     */
     func getPhotoPath() -> URL? {
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(protoID)) else { return nil }
         return dir.appendingPathComponent("\(name).jpg")
     }
     
+    /**
+        # Save photo
+        Function check if data of photo which was given exists.
+        If data exist call function for asynchronous save data into application SandBox.
+     */
     func savePhoto(toCloud: Bool, photo: Data?, protoID: Int, name: Int, value: Double, diameter: Double = 50.0, mocSave: (()->())? = nil){
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         guard let data = photo else { printError(from: "save photo", message: "Data is nil"); return }
@@ -36,6 +45,11 @@ extension MyPhoto {
 
     }
     
+    /**
+        # Save photo
+        Function check if data of photo which was given exists.
+        If data exist call function for asynchronous save data into application SandBox.
+     */
     func savePhoto(toCloud: Bool, photo: UIImage?, protoID: Int, name: Int, value: Double, diameter: Double = 50.0, mocSave: (()->())? = nil) {
         guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: protoID) else { return }
         guard let photo = photo else { printError(from: "save photo", message: "Photo is nil"); return}
@@ -43,6 +57,10 @@ extension MyPhoto {
         _savePhoto(data: data, dir: dir, protoID: protoID ,name: name, value: value, diameter: diameter, cloud: toCloud, mocSave: mocSave)
     }
     
+    /**
+        # Delete photo
+        Function remove local copy of photo from application SandBox.
+     */
     func deleteFromDisk() {
         DispatchQueue.global().async {
             guard let dir = Dirs.shared.getSpecificPhotoDir(protoID: Int(self.protoID)) else { return }
@@ -59,6 +77,10 @@ extension MyPhoto {
         }
     }
     
+    /**
+        # _Save photo
+        Function fill object with data and save asynchronously photo into application SandBox.
+     */
     private func _savePhoto(data: Data, dir: URL, protoID: Int, name: Int, value: Double, diameter: Double, cloud: Bool, mocSave: (()->())?) {
         DispatchQueue.global().async {
             self.name = Int16(name)
@@ -84,6 +106,10 @@ extension MyPhoto {
         }
     }
     
+    /**
+        # Save to cloud
+        Function saved object into cloud.
+     */
     private func saveToCloud(mocSave: (()->())?) {
         Cloud.shared.saveToCloud(recordType: Cloud.RecordType.photos, photo: self) { recordID in
             self.recordID = recordID

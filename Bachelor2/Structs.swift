@@ -92,7 +92,7 @@ struct Proto: Codable, Equatable {
     var material: Material = Material()
     var workflow: Workflow = Workflow()
     
-    var lastPhotoIndex: Int = 0
+    var lastPhotoIndex: Int = 1
     var locked: Bool = false
 }
 

@@ -36,7 +36,7 @@ struct CreatorView: View {
             Section {
                 HStack{
                     Spacer()
-                    Button("Vyrber logo firmy"){
+                    Button("Vyber logo firmy"){
                         showImagePicker.toggle()
                     }
                     .padding(8)

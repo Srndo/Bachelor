@@ -24,7 +24,7 @@ struct ProtocolView: View {
     
     @State var document: Document?
     @State var photos: [MyPhoto] = []
-    @State var lastPhotoNumber: Int = 0
+    @State var lastPhotoNumber: Int = 1
     
     @State var locked: Bool = false
     @State private var creatingOutput: Bool = false
@@ -259,21 +259,21 @@ struct ProtocolView: View {
         moc.trySave(savingFrom: "clearDB", errorFrom: "clearDB", error: "oOoOoPs")
     }
     private func fillForTest(number: Int) {
-        proto.client.name = String(number)
-        proto.client.address = String(number)
+        proto.client.name = "Firma \(number)"
+        proto.client.address = "Adresa \(number)"
         proto.client.ico = number
         proto.client.dic = number
-        proto.construction.address = String(number)
-        proto.construction.name = String(number)
-        proto.construction.section = String(number)
+        proto.construction.address = "Adresa \(number)"
+        proto.construction.name = "Stavba \(number)"
+        proto.construction.section = "Sekcia \(number)"
         proto.creationDate = Date()
-        proto.device.manufacturer = String(number)
-        proto.device.name = String(number)
-        proto.device.serialNumber = String(number)
-        proto.material.material = String(number)
-        proto.material.manufacturer = String(number)
-        proto.method.about = String(number)
-        proto.method.name = String(number)
+        proto.device.manufacturer = "Výrobca \(number)"
+        proto.device.name = "Zariadenie \(number)"
+        proto.device.serialNumber = "A\(number)B\(number*number)C"
+        proto.material.material = "Material \(number)"
+        proto.material.manufacturer = "Zhotoviteľ \(number)"
+        proto.method.about = "Popis \(number)"
+        proto.method.name = "Metóda \(number)"
         proto.method.requestedValue = Double(number)
         proto.method.type = "Odtrhová skúška"
         proto.method.monitoredDimension = "odtrhová sila / odtrhové napätie"

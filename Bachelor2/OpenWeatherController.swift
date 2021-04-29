@@ -53,7 +53,6 @@ extension WeatherService: CLLocationManagerDelegate {
     
     public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         printError(from: "locationManager", message: error.localizedDescription)
-        print(error)
     }
 }
 
@@ -68,7 +67,7 @@ struct MainAPI: Codable {
     let humidity: Double
 }
 
-struct WeatherAPI: Codable {
+struct WeatherAPI: Codable { // for future extensions 
     let description: String
     let iconName: String
     

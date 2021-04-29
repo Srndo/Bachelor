@@ -23,11 +23,46 @@ extension DatabaseArchive {
     @NSManaged public var recordID: CKRecord.ID?
     @NSManaged public var construction: String
     
-    func getProto(completion: @escaping (String?) -> ()) {
+    /**
+        # Save to cloud
+        Function saved object into cloud.
+     */
+    func saveToCloud() {
+        self.getEncodedProto{ encoded in
+            guard let proto = encoded else { return }
+            Cloud.shared.saveToCloud(recordType: Cloud.RecordType.protocols, protoID: Int(self.protoID), encodedProto: proto) { recordID in
+                self.recordID = recordID
+            }
+        }
+    }
+    
+    /**
+        # Remove document
+        Function remove local copy of document.
+     */
+    func removeDocument() {
+        let document = Document(protoID: Int(protoID))
+        
+        if FileManager.default.fileExists(atPath: document.documentPath.path) {
+            do {
+                try document.delete()
+                print("Document removed from local storage")
+            } catch {
+                printError(from: "remove document", message: "Cannot remove document for protocol[\(protoID)]")
+                print(error)
+            }
+        }
+    }
+    
+    /**
+        # Get encoded proto
+        Function asynchronously return encoded document.
+     */
+    func getEncodedProto(completion: @escaping (String?) -> ()) {
         let document = Document(protoID: Int(protoID))
         document.open(){ res in
             if res {
-                let encoded = try? document.contents(forType: "String") as? String
+                let encoded = try? JSONEncoder().encode(document.proto).base64EncodedString()
                 completion(encoded)
             } else {
                 completion(nil)
@@ -36,6 +71,10 @@ extension DatabaseArchive {
         }
     }
     
+    /**
+        # Create
+        Function will create or modify Document of this object.
+     */
     func create(encodedProto: String, local: Bool, recordID: CKRecord.ID? = nil) -> Proto? {
         guard let proto = decodeProto(encodedProto: encodedProto) else { return nil }
         let document = Document(protoID: proto.id, proto: proto)
@@ -48,23 +87,35 @@ extension DatabaseArchive {
                 self.local = true
             }
         }
-        fill(proto: proto, local: local, recordID: recordID)
+        _fill(proto: proto, local: local, recordID: recordID)
         return proto
     }
     
+    /**
+        # Modify variables
+        Function edit object variables.
+     */
     func modifyVariables(new: DatabaseArchive) {
-        fill(da: new)
+        _fill(da: new)
     }
     
+    /**
+        # Fill with data
+        Function fill object variables with given protocol.
+     */
     func fillWithData(proto: Proto, local: Bool, recordID: CKRecord.ID? = nil) -> String? {
         guard let encoded = try? JSONEncoder().encode(proto).base64EncodedString() else { printError(from: "fillWithData", message: "Cannot encode protocol[\(proto.id)]"); return nil}
         
-        fill(proto: proto, local: local, recordID: recordID)
+        _fill(proto: proto, local: local, recordID: recordID == nil ? self.recordID : recordID)
         
         return encoded
     }
     
-    private func fill(da: DatabaseArchive) {
+    /**
+        # _Fill
+        Function fill object.
+     */
+    private func _fill(da: DatabaseArchive) {
         self.client = da.client
         self.date = da.date
         self.local = da.local
@@ -73,7 +124,11 @@ extension DatabaseArchive {
         self.recordID = da.recordID
     }
     
-    private func fill(proto: Proto, local: Bool, recordID: CKRecord.ID?) {
+    /**
+        # _Fill
+        Function fill object.
+     */
+    private func _fill(proto: Proto, local: Bool, recordID: CKRecord.ID?) {
         self.client = proto.client.name
         self.date = proto.creationDate
         self.local = local
@@ -82,6 +137,10 @@ extension DatabaseArchive {
         self.recordID = recordID
     }
     
+    /**
+        # Decode proto
+        Function decode given string as Protocol.
+     */
     private func decodeProto(encodedProto: String) -> Proto? {
         guard let data = Data(base64Encoded: encodedProto) else {
             printError(from: "decodeProto", message: "Cannot convert encodedProto to data")

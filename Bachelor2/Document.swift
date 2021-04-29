@@ -49,16 +49,28 @@ class Document: UIDocument {
         }
     }
     
+    /**
+        # Delete
+        Function remove Document from application SandBox.
+     */
     func delete() throws {
         if FileManager.default.fileExists(atPath: documentPath.path){
             try FileManager.default.removeItem(at: documentPath)
         }
     }
     
+    /**
+        # Exist
+        Function return true if Document exists in application SandBox.
+     */
     func exists() -> Bool {
         return Dirs.shared.fileExists(at: documentPath.path)
     }
     
+    /**
+        # Modify
+        Function modify Document.
+     */
     func modify(new proto: Proto, afterSave: @escaping () -> ()) {
         self.proto = proto
         self.updateChangeCount(.done)
@@ -72,6 +84,10 @@ class Document: UIDocument {
         }
     }
     
+    /**
+        # Create new
+        Function create new Document.
+     */
     func createNew(completition: (() -> ())? = nil) {
         guard let proto = proto else { printError(from: "document save", message: "Protocol is nil"); return }
         
