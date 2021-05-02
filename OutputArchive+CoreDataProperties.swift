@@ -27,7 +27,6 @@ extension OutputArchive {
         Function return URL of PDF file for object.
      */
     func getPdfURL() -> URL? {
-        guard pdf == true else { return nil }
         return Dirs.shared.getPdfURL(protoID: Int(protoID), internalID: Int(internalID))
     }
     
@@ -36,7 +35,6 @@ extension OutputArchive {
         Function return URL of ZIP file for object.
      */
     func getZipURL() -> URL? {
-        guard zip == true else { return nil }
         return Dirs.shared.getZipURL(protoID: Int(protoID), internalID: Int(internalID))
     }
     
