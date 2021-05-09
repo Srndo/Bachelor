@@ -16,7 +16,7 @@ public func printError(from: String, message: String){
 
 extension Proto {
     func disabled() -> Bool {
-        if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() && workflow.filled() {
+        if creationDate != nil && client.filled() && construction.filled() && device.filled() && method.filled() && material.filled() && workflow.filled() && clima.filled() {
             return false
         }
         return true
@@ -143,6 +143,9 @@ extension ProtocolView {
                     }
                     self.internalID = proto.internalID
                     self.locked = proto.locked
+                    if self.dimension == nil {
+                        self.dimension = proto.device.dimension
+                    }
                 }
             } else {
                 printError(from: "protoView-document", message: "Document with protocol \(protoID) did not open")
