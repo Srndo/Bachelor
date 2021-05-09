@@ -42,10 +42,10 @@ struct PhotoView: View {
                 }){
                     Text("Fotky")
                         .bold()
-                        .foregroundColor(photos.isEmpty ? Color.red : Color.green)
+                        .foregroundColor(photos.isEmpty ? Color.orange : Color.green)
                 }
                 Spacer()
-                Image(systemName: "photo.on.rectangle").foregroundColor(photos.isEmpty ? Color.red : Color.green)
+                Image(systemName: "photo.on.rectangle").foregroundColor(photos.isEmpty ? Color.orange : Color.green)
             }
         }
     }
@@ -60,14 +60,16 @@ struct PhotosView: View {
     
     @Binding var photos: [MyPhoto]
     @Binding var lastPhotoIndex: Int
+    
     var protoID: Int
     var internalID: Int
-    @State private var showAllert: Bool = false
+    
     @State private var edit: Bool = false
     @State private var editingPhoto: MyPhoto?
-    @State private var placeholder: String = "Zadajte hodnotu"
-    @State private var refresh: Bool = false
+    
     @Binding var locked: Bool
+    
+    @State private var refresh: Bool = false // ugly way 
     
     var body: some View {
         Form{
@@ -124,10 +126,11 @@ struct PhotosView: View {
                         })
                     }
                 }.onDelete(perform: deletePhoto)
+                Text(String(refresh)).hidden()
             }
         }
         .sheet(isPresented: $edit) {
-            EditingView(editingPhoto: $editingPhoto, show: $edit).environment(\.managedObjectContext , moc)
+            EditingView(editingPhoto: $editingPhoto, show: $edit, refresh: $refresh).environment(\.managedObjectContext , moc)
         }
     }
 }
@@ -141,11 +144,8 @@ struct EditingView: View {
     
     @Binding var editingPhoto: MyPhoto?
     @Binding var show: Bool
+    @Binding var refresh: Bool
     
-    init(editingPhoto: Binding<MyPhoto?>, show: Binding<Bool>){
-        _editingPhoto = editingPhoto
-        _show = show
-    }
     var body: some View {
         Form{
             Section{
@@ -170,6 +170,7 @@ struct EditingView: View {
                     moc.trySave(savingFrom: "edit photo value", errorFrom: "PhotoView", error: "Cannot change value of photo \(photo.name)")
                     Cloud.shared.modifyOnCloud(photo: photo)
                     show.toggle()
+                    refresh.toggle()
                 }
             }
         }
