@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ProtocolView: View {
     @Environment(\.managedObjectContext) var moc
+    @Environment(\.colorScheme) var colorScheme
     @FetchRequest(entity: DatabaseArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \DatabaseArchive.protoID , ascending: true)]) var allDA: FetchedResults<DatabaseArchive>
     @FetchRequest(entity: MyPhoto.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \MyPhoto.protoID , ascending: true)]) private var allPhotos: FetchedResults<MyPhoto>
     @FetchRequest(entity: OutputArchive.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \OutputArchive.protoID , ascending: true)]) var allOutputs: FetchedResults<OutputArchive>
@@ -21,6 +22,7 @@ struct ProtocolView: View {
     @State var ico: String = ""
     @State var dic: String = ""
     @State var reqVal: String = ""
+    @State var dimension: Dimensions?
     
     @State var document: Document?
     @State var photos: [MyPhoto] = []
@@ -40,6 +42,7 @@ struct ProtocolView: View {
         }
         
         _proto = State(initialValue: Proto(id: self.protoID))
+        _dimension = State(initialValue: self.proto.device.dimension)
         document = nil
     }
     
@@ -76,11 +79,21 @@ struct ProtocolView: View {
                     TextField("*Názov", text: $proto.device.name)
                     TextField("*Výrobca", text: $proto.device.manufacturer)
                     TextField("*Výrobné číslo", text: $proto.device.serialNumber)
-                    Picker("*Jednotky", selection: $proto.device.dimension) {
-                        ForEach(Dimensions.allCases, id:\.self) { dim in
-                            Text(dim.rawValue)
-                        }.foregroundColor(.black)
-                    }.foregroundColor(.gray)
+                    HStack{
+                        Picker("*Jednotky", selection: $dimension) {
+                            ForEach(Dimensions.allCases, id:\.self) { dim in
+                                Text(dim.rawValue).tag(dim as Dimensions?)
+                            }.foregroundColor(colorScheme == .dark ? Color.white : Color.black)
+                        }.foregroundColor(.gray)
+                        .pickerStyle(MenuPickerStyle())
+                        .onChange(of: dimension) { dim in
+                            guard let dim = dim else { return }
+                            proto.device.dimension = dim
+                            print(proto.device.dimension.rawValue)
+                        }
+                        Spacer()
+                        Text(proto.device.dimension.rawValue)
+                    }
                 }.disabled(locked)
             }.foregroundColor(proto.device.filled() ? .green : .red)
             
@@ -93,12 +106,17 @@ struct ProtocolView: View {
                             proto.method.requestedValue = reqVal
                         }
                     }
-                    TextField("Sledovaná veličina", text: $proto.method.monitoredDimension)
+                    TextField("*Sledovaná veličina", text: $proto.method.monitoredDimension)
                     TextEditor(text: $proto.method.about)
                         .foregroundColor(proto.method.about == "Popis metódy" ? .gray : .black)
                         .onTapGesture {
                             if proto.method.about == "Popis metódy" {
                                 proto.method.about = ""
+                            }
+                        }
+                        .onAppear{
+                            if proto.method.about == "" {
+                                proto.method.about = "Popis metódy"
                             }
                         }
                 }.disabled(locked)
@@ -133,7 +151,7 @@ struct ProtocolView: View {
                         }
                     }
                 }.disabled(locked)
-            }.foregroundColor(!proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" ? .green : .red )
+            }.foregroundColor(!proto.info.isEmpty && proto.info != "Popis / vyhodnotenie protokolu" ? .green : .orange )
 
             Group { // struct allow only 10 views
                 DateView(proto: $proto, locked: $locked)
@@ -151,14 +169,12 @@ struct ProtocolView: View {
                                 if proto.id == -1 {
                                     proto.id = Int(allDA.last?.protoID ?? 0) + 1
                                 }
-                                fillForTest(number: proto.id)
                                 // if was set as -1 (not to show on toolbar) set to 0 if new proto else set to old value
                                 proto.internalID = proto.internalID == -1 ? 0 : proto.internalID
                                 createNew()
                             }
-//                            .disabled(proto.disabled())
                             .padding(8)
-                            .background(proto.disabled() ? Color.gray : Color.blue)
+                            .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             Spacer()
@@ -200,7 +216,7 @@ struct ProtocolView: View {
                     }
                     
                     Section(header: Text("Verzie")) {
-                        VersionsView(protoID: protoID, versions: allOutputs.filter({ $0.protoID == protoID }), message: $message)
+                        VersionsView(protoID: protoID, versions: allOutputs.filter({ $0.protoID == protoID }))
                     }
                 }
         }
@@ -211,8 +227,6 @@ struct ProtocolView: View {
             }
         }
         .onAppear{
-            printDB()
-//            clearDB()
             if protoID > -1  && photos.isEmpty {
                 photos = allPhotos.filter{ $0.protoID == Int16(proto.id) }
             }
