@@ -10,14 +10,13 @@ import SwiftUI
 struct VersionsView: View {
     @State private var show: Bool = false
     @State private var toShow: OutputArchive? = nil
-    @Binding var message: String
     private var versions: [OutputArchive] = []
     private var protoID: Int
     
-    init(protoID: Int, versions: [OutputArchive], message: Binding<String>) {
+    init(protoID: Int, versions: [OutputArchive]) {
         self.protoID = protoID
         self.versions = versions.sorted(by: { $0.internalID > $1.internalID })
-        _message = message
+//        _toShow = State(initialValue: self.versions.last)
     }
     
     var body: some View {
@@ -43,42 +42,43 @@ struct VersionsView: View {
                         Image(systemName: "square.and.arrow.up")
                             .foregroundColor(.blue)
                             .onTapGesture {
-                                var items: [Any] = []
-                                if version.pdf {
-                                    guard let pdfURL = Dirs.shared.getPdfURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
-                                    items.append(pdfURL)
-                                }
-                                if version.zip {
-                                    guard let zipURL = Dirs.shared.getZipURL(protoID: Int(version.protoID), internalID: Int(version.internalID)) else { return }
-                                    items.append(zipURL)
-                                }
-                                
-                                if share(items: items) {
-                                    message = "Súbory možné odoslať"
-                                } else {
-                                    message = "ERROR: Súbory sa nepodarilo odoslať"
-                                }
-                        }
+                                toShow = version
+                            }
+                    }
+                    .sheet(isPresented: $show) {
+                        ActivityViewController(version: toShow)
                     }
                 }
             }
         }
-        .onAppear{
-            toShow = versions.first
-        }
-        .onDisappear{
-            message = ""
+        .onChange(of: toShow) { _ in
+            self.show.toggle()
         }
     }
     
-    private func share(items: [Any], excludedActivityTypes: [UIActivity.ActivityType]? = nil) -> Bool {
-        guard let source = UIApplication.shared.windows.last?.rootViewController else {
-            return false
+    struct ActivityViewController: UIViewControllerRepresentable {
+        
+        var version: OutputArchive?
+        var applicationActivities: [UIActivity]? = nil
+
+        func makeUIViewController(context: UIViewControllerRepresentableContext<ActivityViewController>) -> UIActivityViewController {
+            var items: [Any] = []
+            guard let version = version else { return UIActivityViewController(activityItems: items, applicationActivities: applicationActivities) }
+            if version.pdf {
+                if let url = version.getPdfURL() {
+                    items.append(url)
+                }
+            }
+            if version.zip {
+                if let url = version.getZipURL() {
+                    items.append(url)
+                }
+            }
+            let controller = UIActivityViewController(activityItems: items, applicationActivities: applicationActivities)
+            return controller
         }
-        let vc = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        vc.excludedActivityTypes = excludedActivityTypes
-        vc.popoverPresentationController?.sourceView = source.view
-        source.present(vc, animated: true)
-        return true
+
+        func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityViewController>) {}
+
     }
 }
