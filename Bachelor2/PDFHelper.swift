@@ -36,7 +36,6 @@ struct PDFKitRepresentedView: UIViewRepresentable {
 }
 
 class PDF {
-    private let pdfMetaData: [CFString : String]
     private let format: UIGraphicsPDFRendererFormat
     private let pageRect: CGRect
     private let renderer: UIGraphicsPDFRenderer
@@ -47,13 +46,7 @@ class PDF {
     private let colWidth: CGFloat
     
     init() {
-        pdfMetaData = [
-            kCGPDFContextCreator: "Simon Sestak",
-            kCGPDFContextAuthor: "ads.com",
-            kCGPDFContextTitle: "Title of create with PDFKit"
-        ]
         format = UIGraphicsPDFRendererFormat()
-        format.documentInfo = pdfMetaData as [String: Any]
 
         // set size of page (A4)
         pageRect = CGRect(x: 0, y: 0, width: 595.2, height: 841.8)
@@ -82,7 +75,7 @@ class PDF {
             createTitle(center: logoCoords.center, bottom: logoCoords.bottom)
             
             // start at end of 3th col and at fixed height 30 (optimalized)
-            var yForAntoherLine = addText(startAt: colWidth * 2 , y: 32, width: colWidth, height: logoCoords.bottom, bold: true, body: "Protokol o skúške číslo:\n\n \(proto.id):\(proto.creationDate.showYear())") + 40
+            var yForAntoherLine = addText(startAt: colWidth * 2 + 10 , y: 32, width: colWidth, height: logoCoords.bottom, bold: true, body: "Protokol o skúške číslo:\n\n \(proto.id):\(proto.creationDate.showYear())") + 40
             
             yForAntoherLine += createRowOfThirds(bold: true, first: "Druh skúšky:", second: "Stavba:", third: "Číslo dokumentu:", y: yForAntoherLine)
             yForAntoherLine += createRowOfThirds(first: proto.method.type, second: proto.construction.name, third: "\(proto.internalID)", y: yForAntoherLine) + 10 // + padding
@@ -96,7 +89,7 @@ class PDF {
                                                  third: "Klimatické podmienky:",
                                                  y: yForAntoherLine)
             yForAntoherLine += createRowOfThirds(first: "Názov: \(proto.device.name)\nVýrobca: \(proto.device.manufacturer)\nVýrobné číslo: \(proto.device.serialNumber)",
-                                                 second: "Skúšaný materiál: \(proto.material.material)\n" + (proto.material.base != "" ? "Podklad: \(proto.material.base)" : "") + "Zhotoviteľ: \(proto.material.manufacturer)",
+                                                 second: "Skúšaný materiál: \(proto.material.material)\n" + (proto.material.base != "" ? "Podklad: \(proto.material.base)\n" : "") + "Zhotoviteľ: \(proto.material.manufacturer)",
                                                  third: "Teplota ovzdušia: \(proto.clima.tempAir) °C\nVlhkosť ovzdušia: \(proto.clima.humAir) %\nTeplota konštrukcie: \(proto.clima.tempCon) °C\nVlhkosť konštrukcie: \(proto.clima.humCon) %",
                                                  y: yForAntoherLine) + 10 // + padding
             yForAntoherLine += createRowOfThirds(bold: true, first: "Dátum realizácie skúšky:",
@@ -149,13 +142,13 @@ class PDF {
             NSAttributedString.Key.paragraphStyle: paragraphStyle,
             NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 14)
         ]
-        let title = "\(creator.name), \(creator.address),\nIČO: \(creator.ico)"
+        let title = "\(creator.name), \(creator.address)\nIČO: \(creator.ico)"
         let formattedTitle = NSMutableAttributedString(string: title, attributes: titleAttributes)
         
         let titleStringRect = CGRect(
             x: pageRect.width * 0.2, // start at max logo end
             y: center,
-            width: pageRect.width * 0.6, // create rect for max size of title
+            width: pageRect.width * 0.57, // create rect for max size of title
             height: bottom
         )
         
