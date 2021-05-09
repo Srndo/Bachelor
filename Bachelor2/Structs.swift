@@ -10,9 +10,11 @@ import SwiftUI
 enum Dimensions: String, Equatable, CaseIterable, Codable {
     case pascal = "Pa"
     case kiloPascal = "kPa"
+    case megaPascal = "MPa"
     case kelvin = "K"
     case newton = "Nm"
     case kiloNewton = "kNm"
+    case megaNewton = "MNm"
 }
 
 struct Company: Codable, Equatable {
@@ -71,6 +73,7 @@ struct Proto: Codable, Equatable {
             lhs.construction == rhs.construction &&
             lhs.workflow == rhs.workflow &&
             lhs.device == rhs.device &&
+            lhs.device.dimension == rhs.device.dimension && 
             lhs.method == rhs.method &&
             lhs.material == rhs.material &&
             lhs.lastPhotoIndex == rhs.lastPhotoIndex &&
